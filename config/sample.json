@@ -1,0 +1,9 @@
+{
+  "httpPort": 8080,
+  "httpsPort": 8443,
+  "sslCert": "./certs/test.pem",
+  "sslKey": "./certs/test.key",
+  "enableLog": true,
+  "logLevel": "debug",
+  "logDir": "./logs"
+}

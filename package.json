@@ -1,0 +1,40 @@
+{
+  "name": "translation-proxy",
+  "version": "1.0.0",
+  "description": "The proxy server translates the contents from the origin by using Google Cloud Translation API",
+  "main": "dist/bundle.js",
+  "scripts": {
+    "exec": "babel-node src/index.js",
+    "serv": "babel-node src/proxy.js",
+    "build": "babel src --out-dir dist",
+    "server": "nodemon --watch dist",
+    "watch": "webpack --watch --mode development",
+    "webpack-build": "webpack src/index.js dist/bundle.js --mode development",
+    "test": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/**/*.{js,es6}' || exit 0"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ]
+  },
+  "author": "Yoshiaki Iinuma",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/cli": "^7.1.5",
+    "@babel/core": "^7.1.6",
+    "@babel/node": "^7.0.0",
+    "@babel/preset-env": "^7.1.6",
+    "@babel/register": "^7.0.0",
+    "babel-loader": "^8.0.4",
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0",
+    "nodemon": "^1.18.6",
+    "webpack": "^4.25.1",
+    "webpack-cli": "^3.1.2"
+  },
+  "dependencies": {
+    "dateformat": "^3.0.3",
+    "http-proxy": "^1.17.0",
+    "request-ip": "^2.1.3"
+  }
+}
