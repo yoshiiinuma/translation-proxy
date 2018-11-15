@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "dateformat": "^3.0.3",
+    "fs-extra": "^7.0.1",
     "http-proxy": "^1.17.0",
     "request-ip": "^2.1.3"
   }

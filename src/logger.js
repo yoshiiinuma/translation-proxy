@@ -1,5 +1,5 @@
 
-import fs from 'fs';
+import fs from 'fs-extra';
 import util from 'util';
 import dateFormat from 'dateformat';
 
@@ -65,7 +65,9 @@ Logger.disable = () => {
   switchToStdout();
 }
 
-Logger.setLogFile = (filePath) => { logFile = filePath; }
+Logger.setLogFile = (filePath) => { 
+  logFile = filePath;
+}
 
 Logger.showStatus = () => {
   console.log(' Log Enabled: ' + logEnabled);
@@ -129,6 +131,7 @@ Logger.initialize = (arg) => {
   if (arg.logLevel) Logger.setLogLevel(arg.logLevel);
   if (arg.logFile) {
     Logger.setLogFile(arg.logFile);
+    fs.ensureFileSync(logFile);
   } else if (arg.env) {
     let dir = DEFAULT_LOG_DIR;
     if (arg.logDir) {
@@ -137,6 +140,7 @@ Logger.initialize = (arg) => {
     if (!dir.endsWith('/')) dir += '/';
     Logger.setLogFile(dir + arg.env + '.log');
   }
+  fs.ensureFileSync(logFile);
 }
 
 Logger.debug = (msg) => {
