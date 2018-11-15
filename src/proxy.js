@@ -61,7 +61,7 @@ const serve = (req, res) => {
     'X-Real-IP': remoteIp
   };
 
-  const opts = {
+  let opts = {
     protocol: scheme + ':',
     method: req.method,
     host: host,
@@ -69,6 +69,11 @@ const serve = (req, res) => {
     path,
     headers
   };
+  if (scheme === 'https') {
+    opts.rejectUnauthorized = false;
+    opts.requestCert = true;
+    opts.agent = false;
+  }
 
   console.log('---------------------------------------------------------------------');
   console.log(req.rawHeaders);
