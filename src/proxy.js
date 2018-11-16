@@ -3,12 +3,16 @@ import fs from 'fs';
 import http from 'http';
 import https from 'https';
 import url from 'url';
+import zlib from 'zlib';
 import requestIp from 'request-ip';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
+import getTranslator from './translate.js';
 
 const conf = loadConfig('./config/config.json');
+
+const translate = getTranslator(conf.apiKey);
 
 const notFound = (res) => {
   Logger.info('404 Not Found');
@@ -34,7 +38,8 @@ const serve = (req, res) => {
   const proxy = (req.connection.encrypted) ? https : http;
   const scheme = (req.connection.encrypted) ? 'https' : 'http';
   const remoteIp = requestIp.getClientIp(req);
-  const forwardedFor = req.headers['x-forwarded-for'] || req.headers['forwarded'] || remoteIp
+  const forwardedFor = req.headers['x-forwarded-for'] || req.headers['forwarded'] || remoteIp;
+  let lang = null;
   let host = req.headers.host;
   //let port = (req.connection.encrypted) ? 443 : 80;
   let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
@@ -46,20 +51,27 @@ const serve = (req, res) => {
     //port = parseInt(matched[2]);
   }
 
+  //console.log('#####################################################################');
+  //console.log(req.rawHeaders);
+
   let path = reqUrl.pathname;
 
   let params = [];
   for(let key in reqUrl.query) {
-    params.push(key + '=' + reqUrl.query[key]);
+    if (key === 'lang') {
+      lang = reqUrl.query[key];
+    } else {
+      params.push(key + '=' + reqUrl.query[key]);
+    }
   }
   if (params.length > 0) path += '?' + params.join('&');
 
-  const headers = {
-    'Host': req.headers.host,
-    'X-Forwarded-For': forwardedFor,
-    'X-Forwarded-Proto': scheme,
-    'X-Real-IP': remoteIp
-  };
+  //let headers = Object.assign({}, req.headers);
+  //let headers = {
+  //  'X-Forwarded-For': forwardedFor,
+  //  'X-Forwarded-Proto': scheme,
+  //  'X-Real-IP': remoteIp
+  //};
 
   let opts = {
     protocol: scheme + ':',
@@ -67,7 +79,7 @@ const serve = (req, res) => {
     host: host,
     port: port,
     path,
-    headers
+    headers: req.headers
   };
   if (scheme === 'https') {
     opts.rejectUnauthorized = false;
@@ -75,47 +87,110 @@ const serve = (req, res) => {
     opts.agent = false;
   }
 
-  console.log('---------------------------------------------------------------------');
-  console.log(req.rawHeaders);
-  console.log(opts);
-
-  let posted = '';
+  const proxyReq = startProxy(res, proxy, opts, lang);
 
   req.on('data', (chunk) => {
-    posted += chunk;
+    proxyReq.write(chunk);
   });
 
   req.on('end', (chunk) => {
-    if (chunk) posted += chunk;
-    startProxy(res, proxy, opts, posted);
+    if (chunk) {
+      proxyReq.write(chunk);
+    }
+    proxyReq.end();
   });
 
-  req.on('error', (chunk) => {
-    Logger.error('PROXY REQUEST ERROR');
+  req.on('error', (e) => {
+    Logger.error('CLIENT REQUEST ERROR');
+    serverError(e, res);
+  });
+
+  res.on('error', (e) => {
+    Logger.error('SERVER RESPONSE ERROR');
     serverError(e, res);
   });
 };
 
-const startProxy = (res, proxy, opts, data) => {
+const startProxy = (res, proxy, opts, lang) => {
   const proxyReq = proxy.request(opts, (proxyRes) => {
-    Logger.debug(opts);
-    Logger.debug('PROXY GOT RESPONSE');
+    const encoding = proxyRes.headers['content-encoding'];
+    const type = proxyRes.headers['content-type'];
+    const transfer = proxyRes.headers['transfer-encoding'];
+    const gzipped = /gzip/.test(encoding);
+    const html = /text\/html/.test(type);
+    const translation = !!lang;
 
-    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, proxyRes.headers)
-    proxyRes.setEncoding('utf8');
+    let body = [];
+
+    Logger.debug('PROXY GOT RESPONSE');
+    console.log('===========================================================================');
+    console.log(opts);
+    console.log('---------------------------------------------------------------------------');
+    console.log(proxyRes.statusCode + ' ' + proxyRes.statusMessage + ' gzipped: ' + gzipped + '; html: ' + html + ', translation: ' + translation);
+    console.log('CONTENT-TYPE: ' + type);
+    console.log('CONTENT-ENCODING: ' + encoding);
+    console.log('TRANSFER-ENCODING: ' + transfer);
+    console.log(proxyRes.headers);
+
+    let headers = Object.assign({}, proxyRes.headers);
+    if (translation) {
+      //headers['transfer-encoding'] = 'identity';
+      delete headers['transfer-encoding'];
+    }
+
     proxyRes.on('error', (e) => {
       Logger.error('PROXY RESPONSE ERROR');
       serverError(e, res);
     });
+
     proxyRes.on('data', (chunk) => {
       Logger.debug('PROXY RESPONSE DATA');
-      res.write(chunk);
+      body.push(chunk);
+      if (!translation) res.write(chunk);
     });
+
     proxyRes.on('end', (chunk) => {
       Logger.debug('PROXY RESPONSE END');
-      if (chunk) res.write(chunk);
+      if (chunk) { 
+        body.push(chunk);
+        if (!translation) res.write(chunk);
+      }
+      if (body.length > 0) {
+        const buffer = Buffer.concat(body);
+        if (html) {
+          console.log('---------------------------------------------------------------------------');
+          if (gzipped) {
+            console.log(zlib.gunzipSync(buffer).toString());
+          } else {
+            console.log(buffer.toString());
+          }
+          if (translation) {
+            let doc;
+            if (gzipped) {
+              doc = zlib.gunzipSync(buffer).toString();
+            } else {
+              doc = buffer.toString();
+            }
+
+            //res.write(buffer);
+
+            translate(doc, lang, (err, translatedHtml) => {
+              if (err) {
+                res.write(buffer);
+              } else {
+                res.write(translatedHtml);
+              }
+            });
+          }
+        }
+      }
       res.end(); 
+      console.log('===========================================================================');
     });
+
+    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
+    //proxyRes.setEncoding('utf8');
+
   });
 
   proxyReq.on('error', (e) => {
@@ -123,15 +198,7 @@ const startProxy = (res, proxy, opts, data) => {
     serverError(e, res);
   });
 
-  //if (opts.method === 'POST' || opts.method === 'PUT') {
-    if (data) {
-      console.log('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-      console.log(data);
-      console.log('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-      proxyReq.write(data); 
-    }
-  //}
-  proxyReq.end();
+  return proxyReq;
 };
 
 const certs = {
