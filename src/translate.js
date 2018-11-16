@@ -93,7 +93,6 @@ const translate = (opts, data, callback) => {
         callback(json);
       }
     });
-
   });
 
   req.on('error', (e) => {
@@ -102,6 +101,5 @@ const translate = (opts, data, callback) => {
     callback(e);
   });
 
-  req.write(JSON.stringify(data));
-  req.end();
+  req.write(JSON.stringify(data), () => req.end());
 };

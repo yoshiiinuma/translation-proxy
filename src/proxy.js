@@ -93,10 +93,7 @@ const serve = (req, res) => {
     proxyReq.write(chunk);
   });
 
-  req.on('end', (chunk) => {
-    if (chunk) {
-      proxyReq.write(chunk);
-    }
+  req.on('end', () => {
     proxyReq.end();
   });
 
@@ -150,12 +147,8 @@ const startProxy = (res, proxy, opts, lang) => {
       if (!translation) res.write(chunk);
     });
 
-    proxyRes.on('end', (chunk) => {
+    proxyRes.on('end', () => {
       Logger.debug('PROXY RESPONSE END');
-      if (chunk) { 
-        body.push(chunk);
-        if (!translation) res.write(chunk);
-      }
       if (body.length > 0) {
         const buffer = Buffer.concat(body);
         if (html) {
@@ -177,14 +170,10 @@ const startProxy = (res, proxy, opts, lang) => {
               if (err) {
                 Logger.error('Proxy#startProxy Translation Failed');
                 Logger.error(err);
-                res.write(buffer, () => {
-                  res.end();
-                });
+                res.end(buffer);
               } else {
                 //console.log(translatedHtml);
-                res.write(zlib.gzipSync(translatedHtml), () => {
-                  res.end();
-                });
+                res.end(zlib.gzipSync(translatedHtml));
               }
             });
           }
