@@ -1,5 +1,4 @@
 {
-  "apiKey": "GOOGLE-CLOUD-TRANSLATION-API-KEY",
   "keyPath": "/path/to/key.json",
   "gcloudPath": "/path/to/google-cloud-sdk/bin/gcloud",
   "httpPort": 8080,
