@@ -170,14 +170,15 @@ const startProxy = (res, proxy, opts, lang) => {
                 Logger.error(err);
                 res.end(buffer);
               } else {
-                //console.log(translatedHtml);
+                console.log(translatedHtml);
+                console.log(typeof translatedHtml);
                 res.end(zlib.gzipSync(translatedHtml));
               }
             });
           }
         }
       } else {
-        res.end(); 
+        res.end();
       }
       console.log('===========================================================================');
     });
