@@ -66,12 +66,10 @@ const serve = (req, res) => {
   }
   if (params.length > 0) path += '?' + params.join('&');
 
-  //let headers = Object.assign({}, req.headers);
-  //let headers = {
-  //  'X-Forwarded-For': forwardedFor,
-  //  'X-Forwarded-Proto': scheme,
-  //  'X-Real-IP': remoteIp
-  //};
+  let headers = Object.assign({}, req.headers);
+  headers['X-Forwarded-For'] = forwardedFor;
+  headers['X-Forwarded-Proto'] = scheme;
+  headers['X-Real-IP'] = remoteIp;
 
   let opts = {
     protocol: scheme + ':',
@@ -79,7 +77,7 @@ const serve = (req, res) => {
     host: host,
     port: port,
     path,
-    headers: req.headers
+    headers
   };
   if (scheme === 'https') {
     opts.rejectUnauthorized = false;
