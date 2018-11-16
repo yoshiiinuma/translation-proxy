@@ -44,7 +44,18 @@ export default (apiKey) => {
         if (chunk) { 
           body += chunk;
         }
-        callback(null, JSON.parse(body));
+        const json = JSON.parse(body);
+        let translated;
+        if (json.data && json.data.translations && json.data.translations[0]) {
+          translated = json.data.translations[0].translatedText;
+        }
+        if (translated) {
+          callback(null, translated);
+        } else {
+          Logger.error('API REQUEST FAILED');
+          Logger.error(json);
+          callback(json);
+        }
       });
 
     });
