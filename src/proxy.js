@@ -173,22 +173,25 @@ const startProxy = (res, proxy, opts, lang) => {
               doc = buffer.toString();
             }
 
-            //res.write(buffer);
-
             translate(doc, lang, (err, translatedHtml) => {
               if (err) {
                 Logger.error('Proxy#startProxy Translation Failed');
                 Logger.error(err);
-                res.write(buffer);
+                res.write(buffer, () => {
+                  res.end();
+                });
               } else {
-                console.log(translatedHtml);
-                res.write(zlib.gzipSync(translatedHtml));
+                //console.log(translatedHtml);
+                res.write(zlib.gzipSync(translatedHtml), () => {
+                  res.end();
+                });
               }
             });
           }
         }
+      } else {
+        res.end(); 
       }
-      res.end(); 
       console.log('===========================================================================');
     });
 
