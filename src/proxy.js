@@ -12,7 +12,7 @@ import getTranslator from './translate.js';
 
 const conf = loadConfig('./config/config.json');
 
-const translate = getTranslator(conf.apiKey);
+const translate = getTranslator(conf);
 
 const notFound = (res) => {
   Logger.info('404 Not Found');
@@ -136,6 +136,7 @@ const startProxy = (res, proxy, opts, lang) => {
     if (translation) {
       //headers['transfer-encoding'] = 'identity';
       delete headers['transfer-encoding'];
+      headers['content-encoding'] = 'gzip';
     }
 
     proxyRes.on('error', (e) => {
@@ -160,9 +161,9 @@ const startProxy = (res, proxy, opts, lang) => {
         if (html) {
           console.log('---------------------------------------------------------------------------');
           if (gzipped) {
-            console.log(zlib.gunzipSync(buffer).toString());
+            //console.log(zlib.gunzipSync(buffer).toString());
           } else {
-            console.log(buffer.toString());
+            //console.log(buffer.toString());
           }
           if (translation) {
             let doc;
@@ -176,9 +177,12 @@ const startProxy = (res, proxy, opts, lang) => {
 
             translate(doc, lang, (err, translatedHtml) => {
               if (err) {
+                Logger.error('Proxy#startProxy Translation Failed');
+                Logger.error(err);
                 res.write(buffer);
               } else {
-                res.write(translatedHtml);
+                console.log(translatedHtml);
+                res.write(zlib.gzipSync(translatedHtml));
               }
             });
           }

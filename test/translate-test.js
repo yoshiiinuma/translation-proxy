@@ -7,7 +7,7 @@ import { loadConfig } from '../src/conf.js';
 import getTranslator from '../src/translate.js';
 
 const conf = loadConfig('./config/config.json');
-const translate = getTranslator(conf.apiKey);
+const translate = getTranslator(conf);
 
 const html = fs.readFileSync('./test/test.html').toString();
 
