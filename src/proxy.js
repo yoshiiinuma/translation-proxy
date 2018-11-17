@@ -175,7 +175,11 @@ const startProxy = (res, proxy, opts, lang) => {
                 res.end(zlib.gzipSync(translatedHtml));
               }
             });
+          } else {
+            res.end(buffer);
           }
+        } else {
+          res.end(buffer);
         }
       } else {
         res.end();
