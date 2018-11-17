@@ -1,7 +1,8 @@
 
 import https from 'https';
-import Logger from './logger.js';
 import childProcess from 'child_process';
+import cheerio from 'cheerio';
+import Logger from './logger.js';
 
 const exec = childProcess.exec;
 
@@ -46,6 +47,57 @@ const createOption = (conf) => {
   });
 };
 
+const DEFAULT_SELECTORS_= ["#header", "#main", "#footer"];
+
+const extractTexts = (html, conf) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const selectors = conf.translationSelectors || DEFAULT_SELECTORS;
+      const $ = cheerio.load(html);
+      const q = [];
+
+      selectors.forEach((sel) => {
+        let text = $(sel).html();
+        Logger.debug('Translate ' + sel + ' SIZE: ' + text.length);
+        q.push(text);
+      });
+      resolve(q);
+    }
+    catch (err) {
+      reject(err);
+    }
+  });
+};
+
+export const replaceTexts = (html, translated, conf) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const selectors = conf.translationSelectors || DEFAULT_SELECTORS;
+      const $ = cheerio.load(html);
+
+      selectors.forEach((sel) => {
+        $(sel).html(translated.shift().translatedText);
+      });
+      resolve($.html());
+    }
+    catch (err) {
+      reject(err);
+    }
+  });
+};
+
+export const createPostData = (html, lang, conf) => {
+  return extractTexts(html, conf)
+    .then((q) => {
+      return {
+      source: 'en',
+      target: lang,
+      format: 'html',
+      q
+      }
+    })
+};
+
 const translate = (opts, data) => {
   return new Promise((resolve, reject) => {
     const req = https.request(opts, (res) => {
@@ -69,15 +121,13 @@ const translate = (opts, data) => {
         }
         const json = JSON.parse(body);
         let translated;
-        if (json.data && json.data.translations && json.data.translations[0]) {
-          translated = json.data.translations[0].translatedText;
+        if (json.data && json.data.translations) {
+          console.log(json.data.translations);
+          return resolve(json.data.translations);
         }
-        if (!translated) {
-          Logger.error('API REQUEST FAILED');
-          Logger.error(json);
-          return reject(json);
-        }
-        resolve(translated);
+        Logger.error('API REQUEST FAILED');
+        Logger.error(json);
+        return reject(json);
       });
     });
 
@@ -94,16 +144,15 @@ const translate = (opts, data) => {
 export default (conf) => {
   return (html, lang, callback) => {
     Logger.debug('Translate to LANG: ' + lang + ' SIZE: ' + html.length);
-    const data = {
-      source: 'en',
-      target: lang,
-      format: 'html',
-      q: html
-    }
-
+    let opts;
+    let data;
     createOption(conf)
-      .then((opts) => translate(opts, data))
-      .then((text) => callback(null, text))
+      .then((_opts) => opts = _opts)
+      .then(() => createPostData(html, lang, conf))
+      .then((_data) => data = _data)
+      .then(() => translate(opts, data))
+      .then((rslt) => replaceTexts(html, rslt, conf))
+      .then((rslt) => callback(null, rslt))
       .catch((err) => callback(err));
   };
 };
