@@ -106,12 +106,22 @@ const serve = (req, res) => {
   });
 };
 
+const uncompress = (text, encoding) => {
+  if (encoding === 'gzip') {
+    return zlib.gunzipSync(text);
+  } else if (encoding === 'deflate') {
+    return zlib.inflateSync(text);
+  }
+  return text;
+}
+
 const startProxy = (res, proxy, opts, lang) => {
   const proxyReq = proxy.request(opts, (proxyRes) => {
     const encoding = proxyRes.headers['content-encoding'];
     const type = proxyRes.headers['content-type'];
     const transfer = proxyRes.headers['transfer-encoding'];
     const gzipped = /gzip/.test(encoding);
+    const deflated = /deflate/.test(encoding);
     const html = /text\/html/.test(type);
     const translation = !!lang;
 
@@ -157,12 +167,14 @@ const startProxy = (res, proxy, opts, lang) => {
             //console.log(buffer.toString());
           }
           if (translation) {
-            let doc;
-            if (gzipped) {
-              doc = zlib.gunzipSync(buffer).toString();
-            } else {
-              doc = buffer.toString();
-            }
+            const doc = uncompress(buffer, encoding).toString();
+            console.log(doc);
+            //let doc;
+            //if (gzipped) {
+            //  doc = zlib.gunzipSync(buffer).toString();
+            //} else {
+            //  doc = buffer.toString();
+            //}
 
             translate(doc, lang, (err, translatedHtml) => {
               if (err) {
