@@ -128,6 +128,16 @@ const startProxy = (res, proxy, opts, lang) => {
     let body = [];
 
     Logger.debug('PROXY GOT RESPONSE');
+    let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
+    if (opts.port) uri += ':' + opts.port;
+    uri += opts.path;
+    let msg = proxyRes.statusCode + ' ' + proxyRes.statusMessage + ' ' +
+      proxyRes.headers['content-type'] + ' ' +
+      proxyRes.headers['content-encoding'] + ' ' +
+      proxyRes.headers['transfer-encoding'];
+
+    Logger.info(uri);
+    Logger.info(msg);
     console.log('===========================================================================');
     console.log(opts);
     console.log('---------------------------------------------------------------------------');
