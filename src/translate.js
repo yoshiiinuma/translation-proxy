@@ -47,7 +47,7 @@ const createOption = (conf) => {
   });
 };
 
-const DEFAULT_SELECTORS_= ["#header", "#main", "#footer"];
+const DEFAULT_SELECTORS = ["body"];
 
 const extractTexts = (html, conf) => {
   return new Promise((resolve, reject) => {
@@ -58,7 +58,7 @@ const extractTexts = (html, conf) => {
 
       selectors.forEach((sel) => {
         let text = $(sel).html();
-        Logger.debug('Translate ' + sel + ' SIZE: ' + text.length);
+        Logger.debug('Translate ' + sel + ' SIZE: ' + text ? text.length : 0);
         q.push(text);
       });
       resolve(q);
