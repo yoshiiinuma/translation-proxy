@@ -53,8 +53,9 @@ const serve = (req, res) => {
     //port = parseInt(matched[2]);
   }
 
-  //console.log('#####################################################################');
-  //console.log(req.rawHeaders);
+  Logger.debug('#####################################################################');
+  Logger.info('CLIENT REQUEST START: ' +scheme + '://' + host + reqUrl.path);
+  Logger.debug(req.rawHeaders);
 
   let path = reqUrl.pathname;
 
@@ -96,11 +97,13 @@ const serve = (req, res) => {
 
   req.on('end', () => {
     Logger.info('CLIENT REQUEST END');
+  Logger.debug('#####################################################################');
     proxyReq.end();
   });
 
   req.on('error', (e) => {
     Logger.error('CLIENT REQUEST ERROR');
+    Logger.debug('#####################################################################');
     serverError(e, res);
   });
 
@@ -123,27 +126,27 @@ const logProxyRequest = (opts) => {
   let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
   if (opts.port) uri += ':' + opts.port;
   uri += opts.path;
-  Logger.info(uri);
   Logger.debug('===========================================================================');
+  Logger.info('PROXY REQUEST SENT: ' + uri);
   Logger.debug(opts);
 };
 
 const logProxyResponse = (res) => {
-  const encoding = res.headers['content-encoding'];
-  const type = res.headers['content-type'];
-  const transfer = res.headers['transfer-encoding'];
-  const msg = res.statusCode + ' ' + res.statusMessage + ' ' +
+  const encoding = res.headers['content-encoding'] || '';
+  const type = res.headers['content-type'] || '';
+  const transfer = res.headers['transfer-encoding'] || '';
+  const len = res.headers['content-length'] || '';
+  const msg = res.statusCode + ' ' + res.statusMessage + ' ' + len + ' ' +
     type + ' ' + encoding + ' ' + transfer;
-  Logger.info(msg);
+  Logger.info('PROXY RESPONSE RECEIVED: ' + msg);
 
   Logger.debug('---------------------------------------------------------------------------');
-  Logger.debug('CONTENT-TYPE: ' + type);
-  Logger.debug('CONTENT-ENCODING: ' + encoding);
-  Logger.debug('TRANSFER-ENCODING: ' + transfer);
   Logger.debug(res.headers);
 };
 
 const startProxy = (res, proxy, opts, lang) => {
+  logProxyRequest(opts);
+
   const proxyReq = proxy.request(opts, (proxyRes) => {
     const encoding = proxyRes.headers['content-encoding'];
     const html = /text\/html/.test(proxyRes.headers['content-type']);
@@ -151,8 +154,6 @@ const startProxy = (res, proxy, opts, lang) => {
 
     let body = [];
 
-    Logger.info('PROXY GOT RESPONSE');
-    logProxyRequest(opts);
     logProxyResponse(proxyRes);
 
     let headers = Object.assign({}, proxyRes.headers);
@@ -183,8 +184,8 @@ const startProxy = (res, proxy, opts, lang) => {
       }
       const buffer = Buffer.concat(body);
       const doc = uncompress(buffer, encoding);
-      Logger.debug('---------------------------------------------------------------------------');
-      Logger.debug(doc);
+      //Logger.debug('---------------------------------------------------------------------------');
+      //Logger.debug(doc);
 
       translate(doc, lang, (err, translatedHtml) => {
         if (err) {
@@ -192,11 +193,10 @@ const startProxy = (res, proxy, opts, lang) => {
           Logger.error(err);
           res.end(buffer);
         } else {
-          console.log(translatedHtml);
-          console.log(typeof translatedHtml);
           res.end(zlib.gzipSync(translatedHtml));
         }
       });
+      Logger.info('PROXY REQUEST END');
       Logger.debug('===========================================================================');
     });
 
@@ -204,6 +204,7 @@ const startProxy = (res, proxy, opts, lang) => {
 
   proxyReq.on('error', (e) => {
     Logger.error('PROXY REQUEST ERROR');
+    Logger.debug('===========================================================================');
     serverError(e, res);
   });
 
