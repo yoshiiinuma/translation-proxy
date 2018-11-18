@@ -1,5 +1,6 @@
 
 import fs from 'fs';
+import util from 'util';
 import http from 'http';
 import https from 'https';
 import url from 'url';
@@ -30,6 +31,7 @@ const serverError = (e, res) => {
 const clientError = (e, socket) => {
   Logger.info('400 Bad Request');
   Logger.info(e);
+  Logger.info(util.inspect(socket));
   socket.end('Error 400: Bad Request');
 };
 
@@ -88,10 +90,12 @@ const serve = (req, res) => {
   const proxyReq = startProxy(res, proxy, opts, lang);
 
   req.on('data', (chunk) => {
+    Logger.info('CLIENT REQUEST DATA');
     proxyReq.write(chunk);
   });
 
   req.on('end', () => {
+    Logger.info('CLIENT REQUEST END');
     proxyReq.end();
   });
 
@@ -108,44 +112,48 @@ const serve = (req, res) => {
 
 const uncompress = (text, encoding) => {
   if (encoding === 'gzip') {
-    return zlib.gunzipSync(text);
+    return zlib.gunzipSync(text).toString();
   } else if (encoding === 'deflate') {
-    return zlib.inflateSync(text);
+    return zlib.inflateRawSync(text).toString();
   }
   return text;
 }
 
+const logProxyRequest = (opts) => {
+  let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
+  if (opts.port) uri += ':' + opts.port;
+  uri += opts.path;
+  Logger.info(uri);
+  Logger.debug('===========================================================================');
+  Logger.debug(opts);
+};
+
+const logProxyResponse = (res) => {
+  const encoding = res.headers['content-encoding'];
+  const type = res.headers['content-type'];
+  const transfer = res.headers['transfer-encoding'];
+  const msg = res.statusCode + ' ' + res.statusMessage + ' ' +
+    type + ' ' + encoding + ' ' + transfer;
+  Logger.info(msg);
+
+  Logger.debug('---------------------------------------------------------------------------');
+  Logger.debug('CONTENT-TYPE: ' + type);
+  Logger.debug('CONTENT-ENCODING: ' + encoding);
+  Logger.debug('TRANSFER-ENCODING: ' + transfer);
+  Logger.debug(res.headers);
+};
+
 const startProxy = (res, proxy, opts, lang) => {
   const proxyReq = proxy.request(opts, (proxyRes) => {
     const encoding = proxyRes.headers['content-encoding'];
-    const type = proxyRes.headers['content-type'];
-    const transfer = proxyRes.headers['transfer-encoding'];
-    const gzipped = /gzip/.test(encoding);
-    const deflated = /deflate/.test(encoding);
-    const html = /text\/html/.test(type);
-    const translation = !!lang;
+    const html = /text\/html/.test(proxyRes.headers['content-type']);
+    const translation = lang && html;
 
     let body = [];
 
-    Logger.debug('PROXY GOT RESPONSE');
-    let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
-    if (opts.port) uri += ':' + opts.port;
-    uri += opts.path;
-    let msg = proxyRes.statusCode + ' ' + proxyRes.statusMessage + ' ' +
-      proxyRes.headers['content-type'] + ' ' +
-      proxyRes.headers['content-encoding'] + ' ' +
-      proxyRes.headers['transfer-encoding'];
-
-    Logger.info(uri);
-    Logger.info(msg);
-    console.log('===========================================================================');
-    console.log(opts);
-    console.log('---------------------------------------------------------------------------');
-    console.log(proxyRes.statusCode + ' ' + proxyRes.statusMessage + ' gzipped: ' + gzipped + '; html: ' + html + ', translation: ' + translation);
-    console.log('CONTENT-TYPE: ' + type);
-    console.log('CONTENT-ENCODING: ' + encoding);
-    console.log('TRANSFER-ENCODING: ' + transfer);
-    console.log(proxyRes.headers);
+    Logger.info('PROXY GOT RESPONSE');
+    logProxyRequest(opts);
+    logProxyResponse(proxyRes);
 
     let headers = Object.assign({}, proxyRes.headers);
     if (translation) {
@@ -153,6 +161,8 @@ const startProxy = (res, proxy, opts, lang) => {
       delete headers['transfer-encoding'];
       headers['content-encoding'] = 'gzip';
     }
+    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
+    //proxyRes.setEncoding('utf8');
 
     proxyRes.on('error', (e) => {
       Logger.error('PROXY RESPONSE ERROR');
@@ -160,57 +170,35 @@ const startProxy = (res, proxy, opts, lang) => {
     });
 
     proxyRes.on('data', (chunk) => {
-      Logger.debug('PROXY RESPONSE DATA');
+      Logger.info('PROXY RESPONSE DATA');
       body.push(chunk);
       if (!translation) res.write(chunk);
     });
 
     proxyRes.on('end', () => {
-      Logger.debug('PROXY RESPONSE END');
-      if (body.length > 0) {
-        const buffer = Buffer.concat(body);
-        if (html) {
-          console.log('---------------------------------------------------------------------------');
-          if (gzipped) {
-            //console.log(zlib.gunzipSync(buffer).toString());
-          } else {
-            //console.log(buffer.toString());
-          }
-          if (translation) {
-            const doc = uncompress(buffer, encoding).toString();
-            console.log(doc);
-            //let doc;
-            //if (gzipped) {
-            //  doc = zlib.gunzipSync(buffer).toString();
-            //} else {
-            //  doc = buffer.toString();
-            //}
-
-            translate(doc, lang, (err, translatedHtml) => {
-              if (err) {
-                Logger.error('Proxy#startProxy Translation Failed');
-                Logger.error(err);
-                res.end(buffer);
-              } else {
-                console.log(translatedHtml);
-                console.log(typeof translatedHtml);
-                res.end(zlib.gzipSync(translatedHtml));
-              }
-            });
-          } else {
-            res.end(buffer);
-          }
-        } else {
-          res.end(buffer);
-        }
-      } else {
+      Logger.info('PROXY RESPONSE END');
+      if (!translation || body.length === 0) {
         res.end();
+        return;
       }
-      console.log('===========================================================================');
-    });
+      const buffer = Buffer.concat(body);
+      const doc = uncompress(buffer, encoding);
+      Logger.debug('---------------------------------------------------------------------------');
+      Logger.debug(doc);
 
-    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
-    //proxyRes.setEncoding('utf8');
+      translate(doc, lang, (err, translatedHtml) => {
+        if (err) {
+          Logger.error('Proxy#startProxy Translation Failed');
+          Logger.error(err);
+          res.end(buffer);
+        } else {
+          console.log(translatedHtml);
+          console.log(typeof translatedHtml);
+          res.end(zlib.gzipSync(translatedHtml));
+        }
+      });
+      Logger.debug('===========================================================================');
+    });
 
   });
 
