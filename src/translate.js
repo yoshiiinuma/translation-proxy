@@ -122,7 +122,6 @@ const translate = (opts, data) => {
         const json = JSON.parse(body);
         let translated;
         if (json.data && json.data.translations) {
-          console.log(json.data.translations);
           return resolve(json.data.translations);
         }
         Logger.error('API REQUEST FAILED');
