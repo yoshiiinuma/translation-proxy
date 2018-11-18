@@ -28,7 +28,7 @@ const getApiKey = (conf) => {
   });
 };
 
-const createOption = (conf) => {
+export const createConnectionOption = (conf) => {
   return new Promise((resolve, reject) => {
     getApiKey(conf)
       .then((key) => {
@@ -98,7 +98,11 @@ export const createPostData = (html, lang, conf) => {
     })
 };
 
-const translate = (opts, data) => {
+/**
+ * opts: conforms http.request, pointing to Google API endpoint
+ * data: conforms Google Cloud Translation API post data
+ */
+export const callTranslateApi = (opts, data) => {
   return new Promise((resolve, reject) => {
     const req = https.request(opts, (res) => {
       let body = '';
@@ -145,11 +149,11 @@ export default (conf) => {
     Logger.debug('Translate to LANG: ' + lang + ' SIZE: ' + html.length);
     let opts;
     let data;
-    createOption(conf)
+    createConnectionOption(conf)
       .then((_opts) => opts = _opts)
       .then(() => createPostData(html, lang, conf))
       .then((_data) => data = _data)
-      .then(() => translate(opts, data))
+      .then(() => callTranslateApi(opts, data))
       .then((rslt) => replaceTexts(html, rslt, conf))
       .then((rslt) => callback(null, rslt))
       .catch((err) => callback(err));
