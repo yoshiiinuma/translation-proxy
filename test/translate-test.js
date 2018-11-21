@@ -85,8 +85,13 @@ describe('translate.js#createPostData', () => {
 });
 
 describe('translate.js#replaceTexts', () => {
-  const translated = ['<p>XXXX</p>', '<p>YYYY</p>', '<p>ZZZZ</p>'];
+  const translated = [
+     { translatedText: '<p>XXXX</p>' },
+     { translatedText: '<p>YYYY</p>' },
+     { translatedText: '<p>ZZZZ</p>' }
+  ];
   const expected = cheerio.load(replaced).html();
+  //const expected = replaced;
 
   it('replaces texts with translated ones', (done) => {
     replaceTexts(doc, translated, conf)
@@ -95,7 +100,7 @@ describe('translate.js#replaceTexts', () => {
         done();
       })
       .catch((e) => {
-        console.log(e)
+        console.log(e);
         done();
       });
   });
