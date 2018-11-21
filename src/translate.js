@@ -1,4 +1,5 @@
 
+import util from 'util';
 import https from 'https';
 import childProcess from 'child_process';
 import cheerio from 'cheerio';
@@ -129,7 +130,11 @@ export const callTranslateApi = (opts, data) => {
           return resolve(json.data.translations);
         }
         Logger.error('API REQUEST FAILED');
-        Logger.error(json);
+        if (json.error) {
+          let err = json.error;
+          Logger.error('Error Code: ' + err.code + ' Message: ' + err.message);
+          err.errors.forEach((e) => Logger.error(e));
+        }
         return reject(json);
       });
     });
