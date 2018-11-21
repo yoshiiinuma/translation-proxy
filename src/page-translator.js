@@ -20,16 +20,25 @@ export default (translator, html) => {
 
   const showDomTreeRecursively = (e, indent = '') => {
     const x = $(e);
-    console.log(indent + e.name + ' (' + e.type + ', ' + x.html().length + ')'); 
-    x.children().each((i, c) => {
+    if (e.type === 'text') {
+      const text = e.data.replace(/\n|\r/g, '').trim();
+      if (text.length > 0) {
+        console.log(indent + 'text (' + e.data.length + ' => ' + text.length + ') ' + text);
+      }
+    } else {
+      console.log(indent + e.name + ' (' + e.type + ', ' + x.html().length + ')');
+    }
+    x.contents().each((i, c) => {
       showDomTreeRecursively(c, indent + '  ');
     });
   };
 
   const showDomTree = (selector) => {
-    const e = $(selector);
-    if (e && e.first()) {
-      showDomTreeRecursively(e[0]);
+    const elms = $(selector);
+    if (elms.length > 0) {
+      elms.each((i, e) => {
+        showDomTreeRecursively(e);
+      });
     } else {
       console.log('Element Not Found: ' + selector);
     }
