@@ -157,6 +157,7 @@ const startProxy = (res, proxy, opts, lang) => {
     logProxyResponse(proxyRes);
 
     let headers = Object.assign({}, proxyRes.headers);
+    headers['access-control-allow-origin'] = opts.host;
     if (translation) {
       //headers['transfer-encoding'] = 'identity';
       delete headers['transfer-encoding'];
