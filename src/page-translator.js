@@ -13,51 +13,58 @@ export default (translator, html) => {
   };
 
   const hasText = (x) => {
+    if (!x.contents) x = $(x);
     if (x.contents().filter((i, e) => {
-      if (x.type === 'text') {
-        if (x.data.replace(/\n|\r/g, '').trim() > 0) {
+      if (e.type === 'text') {
+        if (e.data.replace(/(?:\\[rn]|[\r\n]+)+/g, '').trim().length > 0) {
           return true;
         }
       }
-      return false;
     }).length > 0) {
-      return ture;
+      return true;
     } else {
       return false;
     }
   };
 
-  /**
-   * need two arrays for temp and final
-   * total size of temp array
-   */
-  const sortOutBySizeRecursively = (elm, size, r) => {
-    const x = $(elm);
-    if (hasText(x)) {
-      r.push(x);
-    }
-
-    /**
-     * if elm has text, push it
-     * if elm size is smaller than limit, push it
-     * if elm size is larger than limit, push it
-     * if elm has a single component that is not text, go next
-     * if elm has multiple components, check one by one
-     */
-    x.contents().each((i, c) => {
-      sortOutBySizeRecursively(c, size, r);
-    });
-  };
-
-  const sortOutBySize = (selector, size) => {
+  const sortOutBySize = (selector, limit) => {
     const elms = $(selector);
-    let r = [];
+    const r = [];
+    let temp = [];
+    let curTotal = 0;
+
+    const dfs = (elm) => {
+      const x = $(elm);
+      const size = x.html().length;
+
+      if (hasText(x)) {
+        temp.push(x);
+        curTotal += size;
+        return;
+      }
+      if (curTotal + size > limit) {
+        if (temp.length > 0) {
+          r.push(temp);
+        }
+        temp = [];
+        curTotal = 0;
+        x.children().each((i, e) => dfs(e));
+      } else {
+        temp.push(x);
+        curTotal += size;
+        return;
+      }
+    };
+
     if (elms.length === 0) {
       return r;
     }
-    elms.each((i, e) => {
-      sortOutBySizeRecursively(e, size, r);
+    elms.each((i, elm) => {
+      dfs(elm);
     });
+
+    if (temp.length > 0) r.push(temp);
+    return r;
   };
 
   const translate = () => {
@@ -89,7 +96,23 @@ export default (translator, html) => {
     }
   };
 
+  const select = (selector) => {
+    const r = selectAll(selector);
+    return r && r[0] ? r[0] : null;
+  };
+
+  const selectAll = (selector) => {
+    return $(selector);
+  };
+
+  const cheerioObject = (e) => {
+    return $(e);
+  };
+
   return {
+    cheerioObject,
+    select,
+    hasText,
     extractComponentsForTranslation,
     sortOutBySize,
     translate,
