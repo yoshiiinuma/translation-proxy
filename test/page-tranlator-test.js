@@ -53,27 +53,12 @@ describe('page-translator#hasText', () => {
       expect(page.hasText(div)).to.be.false;
     })
   });
-
 });
 
 describe('page-translator#sortOutBySize', () => {
   it('returns array of components that have text', () => {
-    let array = page.sortOutBySize('body', 100);
-    array.forEach((ary) => {
-      console.log('------------------------------------------');
-      ary.forEach((e) => {
-        e = e[0];
-        const x = page.cheerioObject(e);
-        if (e.type === 'text') {
-          const text = e.data.replace(/\n|\r/g, '').trim();
-          if (text.length > 0) {
-            console.log('text (' + e.data.length + ' => ' + text.length + ') ' + text);
-          }
-        } else {
-          console.log(e.name + ' (' + e.type + ', ' + x.html().length + ')');
-        }
-      })
-    });
+    let array = page.sortOutBySize('body', 180);
+    page.showSorted(array);
   });
 });
 

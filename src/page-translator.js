@@ -38,17 +38,37 @@ export default (translator, html) => {
       const size = x.html().length;
 
       if (hasText(x)) {
-        temp.push(x);
-        curTotal += size;
-        return;
+        if (curTotal + size > limit) {
+          if (temp.length > 0) {
+            r.push(temp);
+            temp = [];
+            curTotal = 0;
+          }
+          temp.push(x);
+          curTotal += size;
+          //r.push(temp);
+          //temp = [];
+          //curTotal = 0;
+          return;
+        } else {
+          temp.push(x);
+          curTotal += size;
+          return;
+        }
       }
       if (curTotal + size > limit) {
-        if (temp.length > 0) {
-          r.push(temp);
+        if (size > limit) {
+          x.children().each((i, e) => dfs(e));
+        } else {
+          if (temp.length > 0) {
+            r.push(temp);
+            temp = [];
+            curTotal = 0;
+          }
+          temp.push(x);
+          curTotal += size;
+          return;
         }
-        temp = [];
-        curTotal = 0;
-        x.children().each((i, e) => dfs(e));
       } else {
         temp.push(x);
         curTotal += size;
@@ -63,7 +83,9 @@ export default (translator, html) => {
       dfs(elm);
     });
 
-    if (temp.length > 0) r.push(temp);
+    if (temp.length > 0) {
+      r.push(temp);
+    }
     return r;
   };
 
@@ -96,6 +118,40 @@ export default (translator, html) => {
     }
   };
 
+  const showSorted = (sorted) => {
+    let total = 0;
+    let subTotal = 0;
+    console.log('===================================================');
+    sorted.forEach((ary) => {
+      ary.forEach((x) => {
+        showElement(x);
+        subTotal += x.html().length;
+      });
+      console.log( '--- [SUBTOTAL]: ' + subTotal + ' -------------------------------');
+      total += subTotal;
+      subTotal = 0;
+    });
+    console.log( '=== [TOTAL]: ' + total + ' ==================================');
+  };
+
+  const showElement = (elm) => {
+    const x = $(elm);
+    const e = x.get(0);
+    if (e.type === 'text') {
+      const text = e.data.replace(/\n|\r/g, '').trim();
+      if (text.length > 0) {
+        console.log('text (' + e.data.length + ' => ' + text.length + ') ' + text);
+      }
+    } else {
+      let attrs = [];
+      if (x.attr('id')) attrs.push('#' + x.attr('id'));
+      if (x.attr('class')) attrs.push('.' + x.attr('class'));
+      let attr = ' [' + attrs.join(' ') + ']';
+      console.log(e.name + attr + ' (' + e.type + ' SIZE: ' + x.html().length +
+           ' ELEMENTS: ' + x.children().length + ' / ' + x.contents().length + ')');
+    }
+  }
+
   const select = (selector) => {
     const r = selectAll(selector);
     return r && r[0] ? r[0] : null;
@@ -105,17 +161,18 @@ export default (translator, html) => {
     return $(selector);
   };
 
-  const cheerioObject = (e) => {
-    return $(e);
-  };
+  //const cheerioObject = (e) => {
+  //  return $(e);
+  //};
 
   return {
-    cheerioObject,
+    //cheerioObject,
     select,
     hasText,
     extractComponentsForTranslation,
     sortOutBySize,
     translate,
+    showSorted,
     showDomTree
   };
 };
