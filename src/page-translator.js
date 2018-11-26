@@ -1,15 +1,61 @@
 
 import cheerio from 'cheerio';
 
+import { createConnectionOption, callTranslateApi } from './translate.js';
+
 const DEFAULT_LIMIT = 5000;
 
-export default (translator, html) => {
+//export default (translator, html) => {
+export default (html, conf) => {
   const $ = cheerio.load(html);
-  let components;
 
-  const extractComponentsForTranslation = (rootSel) => {
-    components = [];
-    let e = $(rootSel);
+  const translateAll = (lang, callback) => {
+    const all = sortOutBySize('body', limit);
+
+    createConnectionOption(conf)
+      .then((apiOpts) => {
+        return Promise.all(all.map((components) => {
+          return translatePortion(components, lang, apiOpts);
+        });
+        //return all.reduce((promise, components) => {
+        //  return translatePortion(components, lang, apiOpts);
+        //}, Promise.resolve());
+      })
+      .then(() => callback(null, $.html()))
+      .catch((err) => callback(err));
+  };
+
+  const translatePortion = (components, lang, apiOpts) => {
+    Logger.debug('Translate to LANG: ' + lang);
+    let data;
+    return createConnectionOption(conf)
+      .then((_opts) => opts = _opts)
+      .then(() => createPostData(components, lang))
+      .then((_data) => data = _data)
+      .then(() => callTranslateApi(apiOpts, data))
+      .then((rslt) => replaceTexts(components, rslt))
+  };
+
+  const makeTranslationData = (components) => {
+    const q = [];
+    components.forEach((x) => q.push(x.html()));
+    return q;
+  };
+
+  const replaceTexts = (components ,translted) => {
+    components.forEach((x) => {
+      x.html(translated.shift().translatedText);
+    });
+  };
+
+  const createPostData = (components, lang) => {
+    const q = makeTranslationData(components);
+    return {
+      source: 'en',
+      target: lang,
+      format: 'html',
+      q
+    }
   };
 
   const hasText = (x) => {
@@ -80,9 +126,6 @@ export default (translator, html) => {
       r.push(temp);
     }
     return r;
-  };
-
-  const translate = () => {
   };
 
   const showDomTreeRecursively = (e, indent = '') => {
@@ -160,11 +203,11 @@ export default (translator, html) => {
 
   return {
     //cheerioObject,
+    translateAll,
+    translatePortion,
     select,
     hasText,
-    extractComponentsForTranslation,
     sortOutBySize,
-    translate,
     showSorted,
     showDomTree
   };

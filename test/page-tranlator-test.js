@@ -4,13 +4,16 @@ import util from 'util';
 import { expect } from 'chai';
 
 import createHtmlPageTranslator from '../src/page-translator.js';
+import { loadConfig } from '../src/conf.js';
 
 
+const conf = loadConfig('./config/config.json');
+//const conf = {};
 const html1 = fs.readFileSync('./test/simple.html');
-const page = createHtmlPageTranslator(translator, html1);
+const page = createHtmlPageTranslator(html1, conf);
 
-const translator = () => {
-};
+//const translator = () => {
+//};
 
 
 //describe('page-translator#showDomTree', () => {
@@ -37,7 +40,7 @@ const htmlWithText =
 
 describe('page-translator#hasText', () => {
   context('when element has a direct text', () => {
-    const page = createHtmlPageTranslator(translator, htmlWithText);
+    const page = createHtmlPageTranslator(htmlWithText, conf);
     const div = page.select('#top');
 
     it('returns true', () => {
@@ -46,7 +49,7 @@ describe('page-translator#hasText', () => {
   });
 
   context('when element has no direect text', () => {
-    const page = createHtmlPageTranslator(translator, htmlWithoutText);
+    const page = createHtmlPageTranslator(htmlWithoutText, conf);
     const div = page.select('#top');
 
     it('returns false', () => {
