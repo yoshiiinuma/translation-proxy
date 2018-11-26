@@ -59,9 +59,84 @@ describe('page-translator#hasText', () => {
 });
 
 describe('page-translator#sortOutBySize', () => {
-  it('returns array of components that have text', () => {
-    let array = page.sortOutBySize('body', 70);
-    page.showSorted(array);
+  context('when given 400 as limit size', () => {
+    const sorted = page.sortOutBySize('body', 400);
+
+    it('returns components sorted out by size', () => {
+      expect(sorted.length).to.be.equal(3);
+      expect(sorted[0].length).to.be.equal(2);
+      expect(sorted[1].length).to.be.equal(2);
+      expect(sorted[2].length).to.be.equal(3);
+    });
+  });
+
+  context('when given 200 as limit size', () => {
+    const sorted = page.sortOutBySize('body', 200);
+
+    it('returns components sorted out by size', () => {
+      expect(sorted.length).to.be.equal(6);
+      expect(sorted[0].length).to.be.equal(2);
+      expect(sorted[1].length).to.be.equal(1);
+      expect(sorted[2].length).to.be.equal(1);
+      expect(sorted[3].length).to.be.equal(1);
+      expect(sorted[4].length).to.be.equal(1);
+      expect(sorted[5].length).to.be.equal(2);
+    });
+  });
+
+  context('when given 100 as limit size', () => {
+    const sorted = page.sortOutBySize('body', 100);
+
+    it('returns components sorted out by size', () => {
+      expect(sorted.length).to.be.equal(6);
+      expect(sorted[0].length).to.be.equal(5);
+      expect(sorted[1].length).to.be.equal(1);
+      expect(sorted[2].length).to.be.equal(5);
+      expect(sorted[3].length).to.be.equal(1);
+      expect(sorted[4].length).to.be.equal(1);
+      expect(sorted[5].length).to.be.equal(2);
+    });
+  });
+
+  context('when given 20 as limit size', () => {
+    const sorted = page.sortOutBySize('body', 20);
+
+    it('returns components sorted out by size', () => {
+      expect(sorted.length).to.be.equal(9);
+      expect(sorted[0].length).to.be.equal(3);
+      expect(sorted[1].length).to.be.equal(3);
+      expect(sorted[2].length).to.be.equal(2);
+      expect(sorted[3].length).to.be.equal(1);
+      expect(sorted[4].length).to.be.equal(1);
+      expect(sorted[5].length).to.be.equal(3);
+      expect(sorted[6].length).to.be.equal(1);
+      expect(sorted[7].length).to.be.equal(1);
+      expect(sorted[8].length).to.be.equal(2);
+    });
+  });
+
+  context('when given 15 as limit size', () => {
+    const sorted = page.sortOutBySize('body', 15);
+
+    it('returns components sorted out by size', () => {
+      expect(sorted.length).to.be.equal(10);
+      expect(sorted[0].length).to.be.equal(2);
+      expect(sorted[1].length).to.be.equal(2);
+      expect(sorted[2].length).to.be.equal(2);
+      expect(sorted[3].length).to.be.equal(2);
+      expect(sorted[4].length).to.be.equal(1);
+      expect(sorted[5].length).to.be.equal(1);
+      expect(sorted[6].length).to.be.equal(3);
+      expect(sorted[7].length).to.be.equal(1);
+      expect(sorted[8].length).to.be.equal(1);
+      expect(sorted[9].length).to.be.equal(2);
+    });
   });
 });
 
+describe('page-translator#extractTextForTranslation', () => {
+  const sorted = page.sortOutBySize('body', 15);
+
+  it('extract text for translation from components', () => {
+  });
+});

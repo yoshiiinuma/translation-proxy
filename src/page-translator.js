@@ -36,7 +36,7 @@ export default (html, conf) => {
       .then((rslt) => replaceTexts(components, rslt))
   };
 
-  const makeTranslationData = (components) => {
+  const extractTextForTranslation = (components) => {
     const q = [];
     components.forEach((x) => q.push(x.html()));
     return q;
@@ -49,7 +49,7 @@ export default (html, conf) => {
   };
 
   const createPostData = (components, lang) => {
-    const q = makeTranslationData(components);
+    const q = extractTextForTranslation(components);
     return {
       source: 'en',
       target: lang,
@@ -205,6 +205,7 @@ export default (html, conf) => {
     //cheerioObject,
     translateAll,
     translatePortion,
+    extractTextForTranslation,
     select,
     hasText,
     sortOutBySize,
