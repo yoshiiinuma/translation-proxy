@@ -44,17 +44,10 @@ export default (translator, html) => {
             temp = [];
             curTotal = 0;
           }
-          temp.push(x);
-          curTotal += size;
-          //r.push(temp);
-          //temp = [];
-          //curTotal = 0;
-          return;
-        } else {
-          temp.push(x);
-          curTotal += size;
-          return;
         }
+        temp.push(x);
+        curTotal += size;
+        return;
       }
       if (curTotal + size > limit) {
         if (size > limit) {

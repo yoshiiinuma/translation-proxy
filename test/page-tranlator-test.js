@@ -57,7 +57,7 @@ describe('page-translator#hasText', () => {
 
 describe('page-translator#sortOutBySize', () => {
   it('returns array of components that have text', () => {
-    let array = page.sortOutBySize('body', 180);
+    let array = page.sortOutBySize('body', 70);
     page.showSorted(array);
   });
 });
