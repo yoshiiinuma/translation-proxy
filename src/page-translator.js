@@ -16,7 +16,7 @@ export default (html, conf) => {
       .then((apiOpts) => {
         return Promise.all(all.map((components) => {
           return translatePortion(components, lang, apiOpts);
-        });
+        }));
         //return all.reduce((promise, components) => {
         //  return translatePortion(components, lang, apiOpts);
         //}, Promise.resolve());
