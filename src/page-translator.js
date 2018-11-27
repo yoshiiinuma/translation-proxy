@@ -5,12 +5,11 @@ import { createConnectionOption, callTranslateApi } from './translate.js';
 
 const DEFAULT_LIMIT = 5000;
 
-//export default (translator, html) => {
 export default (html, conf) => {
   const $ = cheerio.load(html);
 
-  const translateAll = (lang, callback) => {
-    const all = sortOutBySize('body', limit);
+  const translateAll = (selector, lang, limit, callback) => {
+    const all = sortOutBySize(selector, limit);
 
     createConnectionOption(conf)
       .then((apiOpts) => {
@@ -26,14 +25,10 @@ export default (html, conf) => {
   };
 
   const translatePortion = (components, lang, apiOpts) => {
-    Logger.debug('Translate to LANG: ' + lang);
-    let data;
-    return createConnectionOption(conf)
-      .then((_opts) => opts = _opts)
-      .then(() => createPostData(components, lang))
-      .then((_data) => data = _data)
-      .then(() => callTranslateApi(apiOpts, data))
-      .then((rslt) => replaceTexts(components, rslt))
+    const data = createPostData(components, lang);
+
+    return callTranslateApi(apiOpts, data)
+      .then((translated) => replaceTexts(components, translated));
   };
 
   const extractTextForTranslation = (components) => {
@@ -42,7 +37,7 @@ export default (html, conf) => {
     return q;
   };
 
-  const replaceTexts = (components ,translted) => {
+  const replaceTexts = (components ,translated) => {
     components.forEach((x) => {
       x.html(translated.shift().translatedText);
     });
@@ -187,6 +182,7 @@ export default (html, conf) => {
     translatePortion,
     createPostData,
     extractTextForTranslation,
+    replaceTexts,
     select,
     hasText,
     sortOutBySize,

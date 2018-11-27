@@ -5,21 +5,51 @@ import { expect } from 'chai';
 
 import createHtmlPageTranslator from '../src/page-translator.js';
 import { loadConfig } from '../src/conf.js';
-
+import { createConnectionOption, callTranslateApi } from '../src/translate.js';
 
 const conf = loadConfig('./config/config.json');
-//const conf = {};
 const html1 = fs.readFileSync('./test/simple.html');
 const page = createHtmlPageTranslator(html1, conf);
-
-//const translator = () => {
-//};
-
 
 //describe('page-translator#showDomTree', () => {
 //  it('prints out dom tree structure', (done) => {
 //    page.showDomTree('body');
 //    done();
+//  });
+//});
+
+//describe('page-translator#translateAll', () => {
+//  const html = fs.readFileSync('./test/test.html').toString();
+//  const page = createHtmlPageTranslator(html, conf);
+//  //const sorted = page.sortOutBySize('#main', 3000);
+//
+//  it('translate html page by using API', () => {
+//    //page.showSorted(sorted);
+//    page.translateAll('#main', 'ja', 3000, (err, rslt) => {
+//      if (err) {
+//        console.log(err);
+//      } else {
+//        console.log(rslt);
+//      }
+//    });
+//  });
+//});
+
+//describe('page-translator#translatePortion', () => {
+//  const html = fs.readFileSync('./test/test.html').toString();
+//  const page = createHtmlPageTranslator(html, conf);
+//  const sorted = page.sortOutBySize('#main', 1000);
+//  const components = sorted[3];
+//
+//  it('translate components by using API', () => {
+//    createConnectionOption(conf)
+//      .then((opts) => {
+//        return page.translatePortion(components, 'ja', opts);
+//      })
+//      .then(() => {
+//        components.forEach((x) => console.log(x.html()));
+//      })
+//      .catch((e) => console.log(e));
 //  });
 //});
 
@@ -55,6 +85,26 @@ describe('page-translator#hasText', () => {
     it('returns false', () => {
       expect(page.hasText(div)).to.be.false;
     })
+  });
+});
+
+describe('page-translator#replaceTexts', () => {
+  const page = createHtmlPageTranslator(html1, conf);
+  const sorted = page.sortOutBySize('body', 15);
+  const components = sorted[6];
+  const translated = [
+     { translatedText: 'XXXX' },
+     { translatedText: 'YYYY' },
+     { translatedText: 'ZZZZ' }
+  ];
+
+  before(() => {
+    page.replaceTexts(components, translated);
+  });
+
+  it('replaces texts with translated ones', () => {
+    const rslts = components.map((x) => x.html());
+    expect(rslts).to.eql(['XXXX', 'YYYY', 'ZZZZ']);
   });
 });
 
