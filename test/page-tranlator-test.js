@@ -58,6 +58,31 @@ describe('page-translator#hasText', () => {
   });
 });
 
+describe('page-translator#createPostData', () => {
+  const sorted = page.sortOutBySize('body', 15);
+
+  it('returns Google Cloud Translation API post data', () => {
+    expect(page.createPostData(sorted[6], 'ja')).to.eql({
+        source: 'en',
+        target: 'ja',
+        format: 'html',
+        q: ['FFFFF', 'GGGGG', 'HHHHH']
+      });
+  });
+});
+
+describe('page-translator#extractTextForTranslation', () => {
+  const sorted = page.sortOutBySize('body', 15);
+
+  it('extract text for translation from components', () => {
+    expect(page.extractTextForTranslation(sorted[0])).to.eql(['menu 1', 'menu 2']);
+    expect(page.extractTextForTranslation(sorted[1])).to.eql(['menu 3', 'menu 4']);
+    expect(page.extractTextForTranslation(sorted[2])).to.eql(['\n      ', 'AAAAA']);
+    expect(page.extractTextForTranslation(sorted[3])).to.eql(['BBBBB', 'CCCCC']);
+    expect(page.extractTextForTranslation(sorted[6])).to.eql(['FFFFF', 'GGGGG', 'HHHHH']);
+  });
+});
+
 describe('page-translator#sortOutBySize', () => {
   context('when given 400 as limit size', () => {
     const sorted = page.sortOutBySize('body', 400);
@@ -134,9 +159,3 @@ describe('page-translator#sortOutBySize', () => {
   });
 });
 
-describe('page-translator#extractTextForTranslation', () => {
-  const sorted = page.sortOutBySize('body', 15);
-
-  it('extract text for translation from components', () => {
-  });
-});

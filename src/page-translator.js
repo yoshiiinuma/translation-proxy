@@ -205,6 +205,7 @@ export default (html, conf) => {
     //cheerioObject,
     translateAll,
     translatePortion,
+    createPostData,
     extractTextForTranslation,
     select,
     hasText,
