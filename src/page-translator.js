@@ -83,41 +83,21 @@ export default (html, conf) => {
       const x = $(elm);
       const size = x.html().length;
 
-      if (hasText(x)) {
-        if (curTotal + size > limit) {
-          if (temp.length > 0) {
-            r.push(temp);
-            temp = [];
-            curTotal = 0;
-          }
-        }
-        temp.push(x);
-        curTotal += size;
+      if (!hasText(x) && size > limit) {
+        x.children().each((i, e) => dfs(e));
         return;
       }
       if (curTotal + size > limit) {
-        if (size > limit) {
-          x.children().each((i, e) => dfs(e));
-        } else {
-          if (temp.length > 0) {
-            r.push(temp);
-            temp = [];
-            curTotal = 0;
-          }
-          temp.push(x);
-          curTotal += size;
-          return;
+        if (temp.length > 0) {
+          r.push(temp);
+          temp = [];
+          curTotal = 0;
         }
-      } else {
-        temp.push(x);
-        curTotal += size;
-        return;
       }
+      temp.push(x);
+      curTotal += size;
     };
 
-    if (elms.length === 0) {
-      return r;
-    }
     elms.each((i, elm) => {
       dfs(elm);
     });
