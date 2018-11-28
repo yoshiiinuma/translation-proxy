@@ -6,6 +6,7 @@ import https from 'https';
 import url from 'url';
 import zlib from 'zlib';
 import requestIp from 'request-ip';
+import cheerio from 'cheerio';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
@@ -35,6 +36,27 @@ const clientError = (e, socket) => {
   Logger.info(util.inspect(socket));
   socket.end('Error 400: Bad Request');
 };
+
+//const alertJs = "<script>setTimer(alert('Translation service is currently not available. Please try again later.')</script>";
+const alertJs = `<script>
+  function displayAlert() { alert('Translation service is currently not available. Please try again later.') };
+  setTimeout(displayAlert, 2000);
+
+  </script>`;
+
+const injectAlert = (html) => {
+  try {
+
+    const $ = cheerio.load(html);
+    $(alertJs).appendTo('body');
+    return $.html();
+  }
+  catch (err) {
+    Logger.error('INJECTALERT ERROR');
+    Logger.error(err);
+    return html;
+  }
+}
 
 const serve = (req, res) => {
   const reqUrl = url.parse(req.url, true);
@@ -195,7 +217,8 @@ const startProxy = (res, proxy, opts, lang) => {
         if (err) {
           Logger.error('Proxy#startProxy Translation Failed');
           Logger.error(err);
-          res.end(buffer);
+          //res.end(buffer);
+          res.end(zlib.gzipSync(injectAlert(doc)));
         } else {
           res.end(zlib.gzipSync(translatedHtml));
         }
