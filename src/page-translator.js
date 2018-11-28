@@ -11,6 +11,7 @@ export default (html, conf) => {
 
   const translateAll = (selectors, lang, limit, callback) => {
     const all = sortOutBySize(selectors, limit);
+    logSorted(all);
 
     Logger.info('TRANSLATEALL BLOCK SIZE: ' + all.length);
     createConnectionOption(conf)
@@ -31,7 +32,6 @@ export default (html, conf) => {
 
   const translatePortion = (components, lang, apiOpts, i) => {
     Logger.info('TRANSLATEPORTION: START #' + i + ' : LEN ' + components.length);
-    showComponents(components);
     const data = createPostData(components, lang);
 
     return callTranslateApi(apiOpts, data)
@@ -145,6 +145,22 @@ export default (html, conf) => {
     }
   };
 
+  const logSorted = (sorted) => {
+    let total = 0;
+    let subTotal = 0;
+    Logger.debug('===================================================');
+    sorted.forEach((ary) => {
+      ary.forEach((x) => {
+        logElement(x);
+        subTotal += x.html().length;
+      });
+      Logger.debug( '--- [SUBTOTAL]: ' + subTotal + ' -------------------------------');
+      total += subTotal;
+      subTotal = 0;
+    });
+    Logger.debug( '=== [TOTAL]: ' + total + ' ==================================');
+  };
+
   const showSorted = (sorted) => {
     let total = 0;
     let subTotal = 0;
@@ -170,6 +186,24 @@ export default (html, conf) => {
     });
     console.log( '--- [SUBTOTAL]: ' + subTotal + ' -------------------------------');
   };
+
+  const logElement = (elm) => {
+    const x = $(elm);
+    const e = x.get(0);
+    if (e.type === 'text') {
+      const text = e.data.replace(/\n|\r/g, '').trim();
+      if (text.length > 0) {
+        Logger.debug('text (' + e.data.length + ' => ' + text.length + ') ' + text);
+      }
+    } else {
+      let attrs = [];
+      if (x.attr('id')) attrs.push('#' + x.attr('id'));
+      if (x.attr('class')) attrs.push('.' + x.attr('class'));
+      let attr = ' [' + attrs.join(' ') + ']';
+      Logger.debug(e.name + attr + ' (' + e.type + ' SIZE: ' + x.html().length +
+           ' ELEMENTS: ' + x.children().length + ' / ' + x.contents().length + ')');
+    }
+  }
 
   const showElement = (elm) => {
     const x = $(elm);

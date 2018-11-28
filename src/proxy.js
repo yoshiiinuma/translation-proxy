@@ -190,7 +190,7 @@ const startProxy = (res, proxy, opts, lang) => {
       //Logger.debug(doc);
 
       const page = createHtmlPageTranslator(doc, conf);
-      page.translateAll(conf.translationSelectors, lang, 3000, (err, translatedHtml) => {
+      page.translateAll(conf.translationSelectors, lang, 8000, (err, translatedHtml) => {
       //translate(doc, lang, (err, translatedHtml) => {
         if (err) {
           Logger.error('Proxy#startProxy Translation Failed');

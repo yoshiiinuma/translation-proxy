@@ -19,13 +19,14 @@ const page = createHtmlPageTranslator(html1, conf);
 //});
 
 //describe('page-translator#translateAll', () => {
-//  const html = fs.readFileSync('./test/test.html').toString();
+//  //const html = fs.readFileSync('./test/test.html').toString();
+//  const html = fs.readFileSync('./spo-faq.html').toString();
 //  const page = createHtmlPageTranslator(html, conf);
-//  const sorted = page.sortOutBySize(['#header', '#main', '#footer'], 3000);
+//  const sorted = page.sortOutBySize(['#header', '#main', '#footer'], 50000);
 //
 //  it('translate html page by using API', () => {
 //    page.showSorted(sorted);
-//    page.translateAll(['#header', '#main', '#footer'], 'ja', 3000, (err, rslt) => {
+//    page.translateAll(['#header', '#main', '#footer'], 'ja', 50000, (err, rslt) => {
 //      if (err) {
 //        console.log(err);
 //      } else {
