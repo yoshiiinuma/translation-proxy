@@ -9,11 +9,12 @@ import requestIp from 'request-ip';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
-import getTranslator from './translate.js';
+//import getTranslator from './translate.js';
+import createHtmlPageTranslator from '../src/page-translator.js';
 
 const conf = loadConfig('./config/config.json');
 
-const translate = getTranslator(conf);
+//const translate = getTranslator(conf);
 
 const notFound = (res) => {
   Logger.info('404 Not Found');
@@ -188,7 +189,9 @@ const startProxy = (res, proxy, opts, lang) => {
       //Logger.debug('---------------------------------------------------------------------------');
       //Logger.debug(doc);
 
-      translate(doc, lang, (err, translatedHtml) => {
+      const page = createHtmlPageTranslator(doc, conf);
+      page.translateAll(conf.translationSelectors, lang, 3000, (err, translatedHtml) => {
+      //translate(doc, lang, (err, translatedHtml) => {
         if (err) {
           Logger.error('Proxy#startProxy Translation Failed');
           Logger.error(err);
