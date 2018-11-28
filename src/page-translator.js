@@ -1,6 +1,7 @@
 
 import cheerio from 'cheerio';
 
+import Logger from './logger.js';
 import { createConnectionOption, callTranslateApi } from './translate.js';
 
 const DEFAULT_LIMIT = 5000;
@@ -8,27 +9,36 @@ const DEFAULT_LIMIT = 5000;
 export default (html, conf) => {
   const $ = cheerio.load(html);
 
-  const translateAll = (selector, lang, limit, callback) => {
-    const all = sortOutBySize(selector, limit);
+  const translateAll = (selectors, lang, limit, callback) => {
+    const all = sortOutBySize(selectors, limit);
 
+    Logger.info('TRANSLATEALL BLOCK SIZE: ' + all.length);
     createConnectionOption(conf)
       .then((apiOpts) => {
-        return Promise.all(all.map((components) => {
-          return translatePortion(components, lang, apiOpts);
+        return Promise.all(all.map((components, i) => {
+          return translatePortion(components, lang, apiOpts, i);
         }));
         //return all.reduce((promise, components) => {
         //  return translatePortion(components, lang, apiOpts);
         //}, Promise.resolve());
       })
-      .then(() => callback(null, $.html()))
+      .then(() => {
+        Logger.info('TRANSLATEALL: Done!!!');
+        callback(null, $.html());
+      })
       .catch((err) => callback(err));
   };
 
-  const translatePortion = (components, lang, apiOpts) => {
+  const translatePortion = (components, lang, apiOpts, i) => {
+    Logger.info('TRANSLATEPORTION: START #' + i + ' : LEN ' + components.length);
+    showComponents(components);
     const data = createPostData(components, lang);
 
     return callTranslateApi(apiOpts, data)
-      .then((translated) => replaceTexts(components, translated));
+      .then((translated) => {
+        Logger.info('TRANSLATEPORTION: END ' + i);
+        replaceTexts(components, translated);
+      });
   };
 
   const extractTextForTranslation = (components) => {
@@ -68,8 +78,11 @@ export default (html, conf) => {
     }
   };
 
-  const sortOutBySize = (selector, limit) => {
-    const elms = $(selector);
+  const sortOutBySize = (selectors, limit) => {
+    if (!selectors) selectors = ['body'];
+    if (!Array.isArray(selectors)) selectors = [selectors];
+    if (selectors.length === 0) selectors = ['body'];
+
     const r = [];
     let temp = [];
     let curTotal = 0;
@@ -93,8 +106,11 @@ export default (html, conf) => {
       curTotal += size;
     };
 
-    elms.each((i, elm) => {
-      dfs(elm);
+    selectors.forEach((sel) => {
+      let elms = $(sel);
+      elms.each((i, elm) => {
+        dfs(elm);
+      });
     });
 
     if (temp.length > 0) {
@@ -143,6 +159,16 @@ export default (html, conf) => {
       subTotal = 0;
     });
     console.log( '=== [TOTAL]: ' + total + ' ==================================');
+  };
+
+  const showComponents = (components) => {
+    let subTotal = 0;
+    console.log('---------------------------------------------------');
+    components.forEach((x) => {
+      showElement(x);
+      subTotal += x.html().length;
+    });
+    console.log( '--- [SUBTOTAL]: ' + subTotal + ' -------------------------------');
   };
 
   const showElement = (elm) => {

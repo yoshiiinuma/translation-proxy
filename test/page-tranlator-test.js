@@ -21,11 +21,11 @@ const page = createHtmlPageTranslator(html1, conf);
 //describe('page-translator#translateAll', () => {
 //  const html = fs.readFileSync('./test/test.html').toString();
 //  const page = createHtmlPageTranslator(html, conf);
-//  //const sorted = page.sortOutBySize('#main', 3000);
+//  const sorted = page.sortOutBySize(['#header', '#main', '#footer'], 3000);
 //
 //  it('translate html page by using API', () => {
-//    //page.showSorted(sorted);
-//    page.translateAll('#main', 'ja', 3000, (err, rslt) => {
+//    page.showSorted(sorted);
+//    page.translateAll(['#header', '#main', '#footer'], 'ja', 3000, (err, rslt) => {
 //      if (err) {
 //        console.log(err);
 //      } else {
