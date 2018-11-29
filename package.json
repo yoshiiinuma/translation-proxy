@@ -10,7 +10,7 @@
     "server": "nodemon --watch dist",
     "watch": "webpack --watch --mode development",
     "webpack-build": "webpack src/index.js dist/bundle.js --mode development",
-    "test": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/**/*.{js,es6}' || exit 0"
+    "test": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/**/*.{js,es6}' --exit"
   },
   "babel": {
     "presets": [
