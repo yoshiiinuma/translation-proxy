@@ -6,6 +6,7 @@
   "httpsPort": 8443,
   "sslCert": "./certs/test.pem",
   "sslKey": "./certs/test.key",
+  "reidsPort": 6379,
   "enableLog": true,
   "logLevel": "debug",
   "logDir": "./logs"
