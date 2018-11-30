@@ -124,7 +124,7 @@ const serve = (req, res) => {
     opts.agent = false;
   }
 
-  const proxyReq = startProxy(res, proxy, opts, lang);
+  const proxyReq = startProxyRequest(res, proxy, opts, lang);
 
   req.on('data', (chunk) => {
     Logger.info('CLIENT REQUEST DATA');
@@ -180,7 +180,7 @@ const logProxyResponse = (res) => {
   Logger.debug(res.headers);
 };
 
-const startProxy = (res, proxy, opts, lang) => {
+const startProxyRequest = (res, proxy, opts, lang) => {
   logProxyRequest(opts);
 
   const proxyReq = proxy.request(opts, (proxyRes) => {
@@ -219,16 +219,9 @@ const startProxy = (res, proxy, opts, lang) => {
         res.end();
         return;
       }
-      const buffer = Buffer.concat(body);
-      const doc = uncompress(buffer, encoding);
-      //Logger.debug('---------------------------------------------------------------------------');
-      //Logger.debug(doc);
-
-      const page = createHtmlPageTranslator(doc, conf);
-      page.translateAll(conf.translationSelectors, lang, 8000, (err, translatedHtml) => {
-      //translate(doc, lang, (err, translatedHtml) => {
+      translatePage(body, encoding, (err, translatedHtml) => {
         if (err) {
-          Logger.error('Proxy#startProxy Translation Failed');
+          Logger.error('Proxy#startProxyRequest Translation Failed');
           Logger.error(err);
           //res.end(buffer);
           res.end(zlib.gzipSync(injectAlert(doc)));
@@ -236,6 +229,24 @@ const startProxy = (res, proxy, opts, lang) => {
           res.end(zlib.gzipSync(translatedHtml));
         }
       });
+
+      //const buffer = Buffer.concat(body);
+      //const doc = uncompress(buffer, encoding);
+      ////Logger.debug('---------------------------------------------------------------------------');
+      ////Logger.debug(doc);
+
+      //const page = createHtmlPageTranslator(doc, conf);
+      //page.translateAll(conf.translationSelectors, lang, 8000, (err, translatedHtml) => {
+      ////translate(doc, lang, (err, translatedHtml) => {
+      //  if (err) {
+      //    Logger.error('Proxy#startProxyRequest Translation Failed');
+      //    Logger.error(err);
+      //    //res.end(buffer);
+      //    res.end(zlib.gzipSync(injectAlert(doc)));
+      //  } else {
+      //    res.end(zlib.gzipSync(translatedHtml));
+      //  }
+      //});
       Logger.info('PROXY REQUEST END');
       Logger.debug('===========================================================================');
     });
@@ -249,6 +260,23 @@ const startProxy = (res, proxy, opts, lang) => {
   });
 
   return proxyReq;
+};
+
+const translatePage = (body, encoding, callback) => {
+  const buffer = Buffer.concat(body);
+  const doc = uncompress(buffer, encoding, callback);
+  //Logger.debug('---------------------------------------------------------------------------');
+  //Logger.debug(doc);
+
+  //translate(doc, lang, (err, translatedHtml) => {
+  const page = createHtmlPageTranslator(doc, conf);
+  page.translateAll(conf.translationSelectors, lang, 8000, (err, translatedHtml) => {
+    if (err) {
+      callback(err);
+    } else {
+      callback(null, translatedHtml);
+    }
+  });
 };
 
 const certs = {
