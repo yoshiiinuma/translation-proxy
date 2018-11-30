@@ -7,11 +7,13 @@ import url from 'url';
 import zlib from 'zlib';
 import requestIp from 'request-ip';
 import cheerio from 'cheerio';
+import crypto from 'crypto';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
 //import getTranslator from './translate.js';
 import createHtmlPageTranslator from '../src/page-translator.js';
+import createCache from '../src/cache.js';
 
 const conf = loadConfig('./config/config.json');
 
@@ -37,12 +39,11 @@ const clientError = (e, socket) => {
   socket.end('Error 400: Bad Request');
 };
 
-//const alertJs = "<script>setTimer(alert('Translation service is currently not available. Please try again later.')</script>";
-const alertJs = `<script>
+const alertJs =
+`<script>
   function displayAlert() { alert('Translation service is currently not available. Please try again later.') };
   setTimeout(displayAlert, 2000);
-
-  </script>`;
+</script>`;
 
 const injectAlert = (html) => {
   try {
@@ -57,6 +58,18 @@ const injectAlert = (html) => {
     return html;
   }
 }
+
+const getFullUrl = (opts) => {
+  let url = opts.protocol + '//' + opts.host;
+  if (opts.port) url += ':' + opts.port;
+  url += opts.path;
+  return url;
+};
+
+const getKey = (opts) => {
+  const reqStr = opts.method + '+' + getFullUrl(opts);
+  return crypto.createHash('md5').update(reqStr).digest('hext');
+};
 
 const serve = (req, res) => {
   const reqUrl = url.parse(req.url, true);
