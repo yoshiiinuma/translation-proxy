@@ -1,5 +1,6 @@
 
 import redis from 'redis';
+import { promisify } from 'util';
 
 export default (opt) => {
 
@@ -10,7 +11,11 @@ export default (opt) => {
     port: opt.port || 6379,
     db: opt.db || 0
   });
-  
+
+  const getAsync = promisify(client.get).bind(client);
+  const setAsync = promisify(client.set).bind(client);
+  const delAsync = promisify(client.del).bind(client);
+
   const get = (key, callback) => {
     client.get(key, (err, val) => {
       if (err) {
@@ -48,6 +53,9 @@ export default (opt) => {
   };
 
   return {
+    getAsync,
+    setAsync,
+    delAsync,
     get,
     set,
     del

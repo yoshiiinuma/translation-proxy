@@ -59,17 +59,26 @@ const injectAlert = (html) => {
   }
 }
 
-const getFullUrl = (opts) => {
+const getFullUrl = (opts, lang) => {
   let url = opts.protocol + '//' + opts.host;
   if (opts.port) url += ':' + opts.port;
   url += opts.path;
+  if (lang) url += '?lang=' + lang;
   return url;
 };
 
-const getKey = (opts) => {
-  const reqStr = opts.method + '+' + getFullUrl(opts);
+const getKey = (opts, lang) => {
+  const reqStr = opts.method + '+' + getFullUrl(opts, lang);
   return crypto.createHash('md5').update(reqStr).digest('hext');
 };
+
+const getCache = async (opts, lang) => {
+  return await cache.get(getKey(opts, lang));
+}
+
+const setCache = async (opts, lang, val) => {
+  return cache.set(getKey(opts, lang), val));
+}
 
 const serve = (req, res) => {
   const reqUrl = url.parse(req.url, true);
@@ -124,22 +133,52 @@ const serve = (req, res) => {
     opts.agent = false;
   }
 
-  const proxyReq = startProxyRequest(res, proxy, opts, lang);
+  const proxyReq = null;
+
+  if (lang) {
+    const translated = getCache(opts, lang);
+      if (translated) {
+        Logger.info('SERVER RESPONSE END: RETURNING CACHED TRANSLATED');
+        res.end(translated);
+        return;
+      }
+    });
+
+    const original = getCache(opts);
+    if (original) {
+      const doc = uncompress(original, encoding, callback);
+      translatePage(doc, lang, (err, translatedHtml) => {
+        if (err) {
+          Logger.error('Proxy#serve Translation Failed');
+          Logger.error(err);
+          res.end(original);
+          return;
+        } else {
+          const gzipped = zlib.gzipSync(translatedHtml);
+          res.end(gzipped);
+          setCache(opts, lang, gzipped, () => {});
+          return;
+        }
+      });
+    }
+  }
+
+  proxyReq = startProxyRequest(res, proxy, opts, lang);
 
   req.on('data', (chunk) => {
     Logger.info('CLIENT REQUEST DATA');
-    proxyReq.write(chunk);
+    if (proxyReq) proxyReq.write(chunk);
   });
 
   req.on('end', () => {
     Logger.info('CLIENT REQUEST END');
-  Logger.debug('#####################################################################');
-    proxyReq.end();
+  Logger.debug('########################I#############################################');
+    if (proxyReq) proxyReq.end();
   });
 
   req.on('error', (e) => {
     Logger.error('CLIENT REQUEST ERROR');
-    Logger.debug('#####################################################################');
+    Logger.debug('####################################################################');
     serverError(e, res);
   });
 
@@ -185,8 +224,8 @@ const startProxyRequest = (res, proxy, opts, lang) => {
 
   const proxyReq = proxy.request(opts, (proxyRes) => {
     const encoding = proxyRes.headers['content-encoding'];
-    const html = /text\/html/.test(proxyRes.headers['content-type']);
-    const translation = lang && html;
+    const isHtml = /text\/html/.test(proxyRes.headers['content-type']);
+    //const translation = lang && isHtml;
 
     let body = [];
 
@@ -194,7 +233,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
 
     let headers = Object.assign({}, proxyRes.headers);
     headers['access-control-allow-origin'] = opts.host;
-    if (translation) {
+    if (isHTML || lang) {
       //headers['transfer-encoding'] = 'identity';
       delete headers['transfer-encoding'];
       headers['content-encoding'] = 'gzip';
@@ -210,43 +249,35 @@ const startProxyRequest = (res, proxy, opts, lang) => {
     proxyRes.on('data', (chunk) => {
       Logger.info('PROXY RESPONSE DATA');
       body.push(chunk);
-      if (!translation) res.write(chunk);
+      if (!(isHTML || lang)) res.write(chunk);
     });
 
     proxyRes.on('end', () => {
       Logger.info('PROXY RESPONSE END');
-      if (!translation || body.length === 0) {
+      if (!(isHTML || lang) || body.length === 0) {
         res.end();
         return;
       }
-      translatePage(body, encoding, (err, translatedHtml) => {
-        if (err) {
-          Logger.error('Proxy#startProxyRequest Translation Failed');
-          Logger.error(err);
-          //res.end(buffer);
-          res.end(zlib.gzipSync(injectAlert(doc)));
-        } else {
-          res.end(zlib.gzipSync(translatedHtml));
-        }
-      });
+      const buffer = Buffer.concat(body);
+      //setCache(opts, null, buffer, () => {});
+      if (lang) {
+        const doc = uncompress(buffer, encoding, callback);
+        translatePage(doc, lang, (err, translatedHtml) => {
+          if (err) {
+            Logger.error('Proxy#startProxyRequest Translation Failed');
+            Logger.error(err);
+            res.end(buffer);
+            //res.end(zlib.gzipSync(injectAlert(doc)));
+          } else {
+            const gzipped = zlib.gzipSync(translatedHtml);
+            res.end(gzipped);
+            setCache(opts, lang, gzipped, () => {});
+          }
+        });
+      } else {
+        res.end(buffer);
+      }
 
-      //const buffer = Buffer.concat(body);
-      //const doc = uncompress(buffer, encoding);
-      ////Logger.debug('---------------------------------------------------------------------------');
-      ////Logger.debug(doc);
-
-      //const page = createHtmlPageTranslator(doc, conf);
-      //page.translateAll(conf.translationSelectors, lang, 8000, (err, translatedHtml) => {
-      ////translate(doc, lang, (err, translatedHtml) => {
-      //  if (err) {
-      //    Logger.error('Proxy#startProxyRequest Translation Failed');
-      //    Logger.error(err);
-      //    //res.end(buffer);
-      //    res.end(zlib.gzipSync(injectAlert(doc)));
-      //  } else {
-      //    res.end(zlib.gzipSync(translatedHtml));
-      //  }
-      //});
       Logger.info('PROXY REQUEST END');
       Logger.debug('===========================================================================');
     });
@@ -262,9 +293,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
   return proxyReq;
 };
 
-const translatePage = (body, encoding, callback) => {
-  const buffer = Buffer.concat(body);
-  const doc = uncompress(buffer, encoding, callback);
+const translatePage = (doc, lang, callback) => {
   //Logger.debug('---------------------------------------------------------------------------');
   //Logger.debug(doc);
 
