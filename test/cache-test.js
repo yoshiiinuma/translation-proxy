@@ -47,30 +47,28 @@ describe('cache#getAsync', () => {
   });
 
   context('using await', () => {
-    //before(async (done) => {
-    //  await cache.setAsync(key, val);
-    //  done();
-    //});
-
-    //after(async (done) => {
-    //  await cache.delAsync(key);
-    //  done();
-    //});
-
-    before((done) => {
-      cache.setAsync(key, val)
-        .then(() => done());
+    before(async () => {
+      await cache.delAsync(key);
     });
 
-    after((done) => {
-      cache.delAsync(key)
-        .then(() => done());
+    it('returns null', async () => {
+      let r = await cache.getAsync(key)
+      expect(r).to.be.null;
+    });
+  });
+
+  context('using await', () => {
+    before(async () => {
+      await cache.setAsync(key, val);
     });
 
-    it('returns the value', async function(done) {
+    after(async () => {
+      await cache.delAsync(key);
+    });
+
+    it('returns the value', async () => {
       let r = await cache.getAsync(key)
       expect(r).to.be.equal(val);
-      done();
     });
   });
 });
