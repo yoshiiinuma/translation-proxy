@@ -39,7 +39,7 @@ describe('cache#getAsync', () => {
     it('returns the value', (done) => {
       cache.getAsync(key)
         .then((r) => {
-          expect(r).to.be.equal(val);
+          expect(r.toString()).to.be.equal(val);
           done();
         })
         .catch((e) => console.log(e));
@@ -68,7 +68,7 @@ describe('cache#getAsync', () => {
 
     it('returns the value', async () => {
       let r = await cache.getAsync(key)
-      expect(r).to.be.equal(val);
+      expect(r.toString()).to.be.equal(val);
     });
   });
 });
@@ -103,7 +103,7 @@ describe('cache#get', () => {
 
     it('returns the value', (done) => {
       cache.get(key, (r) => {
-        expect(r).to.be.equal(val);
+        expect(r.toString()).to.be.equal(val);
         done();
       });
     });

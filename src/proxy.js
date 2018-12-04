@@ -68,20 +68,22 @@ const getFullUrl = (opts, lang) => {
   return url;
 };
 
-const getKey = (opts, lang) => {
+const getKey = (prefix, opts, lang) => {
   const reqStr = opts.method + '+' + getFullUrl(opts, lang);
-  return crypto.createHash('md5').update(reqStr).digest('hext');
+  let key = crypto.createHash('md5').update(reqStr).digest('hext');
+  Logger.info('CACHE KEY: ' + key);
+  return key;
 };
 
 const getCache = async (opts, lang) => {
-  return await cache.getAsync(getKey(opts, lang));
+  return await cache.getAsync(getKey('PAGE-', opts, lang));
 }
 
 const setCache = async (opts, lang, val) => {
-  return await cache.setAsync(getKey(opts, lang), val));
+  return await cache.setAsync(getKey('PAGE-', opts, lang), val);
 }
 
-const serve = (req, res) => {
+const serve = async (req, res) => {
   const reqUrl = url.parse(req.url, true);
   const proxy = (req.connection.encrypted) ? https : http;
   const scheme = (req.connection.encrypted) ? 'https' : 'http';
@@ -134,32 +136,30 @@ const serve = (req, res) => {
     opts.agent = false;
   }
 
-  const proxyReq = null;
+  let proxyReq = null;
 
   if (lang) {
-    const translated = getCache(opts, lang);
-      if (translated) {
-        Logger.info('SERVER RESPONSE END: RETURNING CACHED TRANSLATED');
-        res.end(translated);
-        return;
-      }
-    });
+    const translated = await getCache(opts, lang);
+    if (translated) {
+      Logger.info('SERVER RESPONSE END: RETURNING CACHED TRANSLATED');
+      res.end(translated);
+      return;
+    }
 
-    const original = getCache(opts);
+    const original = await getCache(opts);
     if (original) {
-      const doc = uncompress(original, encoding, callback);
+      const doc = uncompress(original, encoding);
       translatePage(doc, lang, (err, translatedHtml) => {
         if (err) {
           Logger.error('Proxy#serve Translation Failed');
           Logger.error(err);
           res.end(original);
           return;
-        } else {
-          const gzipped = zlib.gzipSync(translatedHtml);
-          res.end(gzipped);
-          setCache(opts, lang, gzipped, () => {});
-          return;
         }
+        const gzipped = zlib.gzipSync(translatedHtml);
+        res.end(gzipped);
+        setCache(opts, lang, gzipped, () => {});
+        return;
       });
     }
   }
@@ -234,7 +234,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
 
     let headers = Object.assign({}, proxyRes.headers);
     headers['access-control-allow-origin'] = opts.host;
-    if (isHTML || lang) {
+    if (isHtml || lang) {
       //headers['transfer-encoding'] = 'identity';
       delete headers['transfer-encoding'];
       headers['content-encoding'] = 'gzip';
@@ -250,19 +250,19 @@ const startProxyRequest = (res, proxy, opts, lang) => {
     proxyRes.on('data', (chunk) => {
       Logger.info('PROXY RESPONSE DATA');
       body.push(chunk);
-      if (!(isHTML || lang)) res.write(chunk);
+      if (!(isHtml || lang)) res.write(chunk);
     });
 
     proxyRes.on('end', () => {
       Logger.info('PROXY RESPONSE END');
-      if (!(isHTML || lang) || body.length === 0) {
+      if (!(isHtml || lang) || body.length === 0) {
         res.end();
         return;
       }
       const buffer = Buffer.concat(body);
       //setCache(opts, null, buffer, () => {});
       if (lang) {
-        const doc = uncompress(buffer, encoding, callback);
+        const doc = uncompress(buffer, encoding);
         translatePage(doc, lang, (err, translatedHtml) => {
           if (err) {
             Logger.error('Proxy#startProxyRequest Translation Failed');
