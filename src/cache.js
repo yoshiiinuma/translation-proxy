@@ -12,19 +12,57 @@ export default (opt) => {
     db: opt.db || 0
   });
 
-  const getAsync = promisify(client.get).bind(client);
-  const setAsync = promisify(client.set).bind(client);
-  const delAsync = promisify(client.del).bind(client);
+  //const getAsync = async promisify(client.get).bind(client);
+  //const setAsync = async promisify(client.set).bind(client);
+  //const delAsync = async promisify(client.del).bind(client);
+
+  const getAsync = (key) => {
+    return new Promise((resolve, reject) => {
+      client.get(key, (err, val) => {
+        if (err) {
+          Logger.debug('CACHE GET ERROR');
+          Logger.debug(err);
+          return reject(err);
+        }
+        resolve(val);
+      });
+    });
+  };
+
+  const setAsync = (key, val) => {
+    return new Promise((resolve, reject) => {
+      client.set(key, val, 'EX', expire, (err) => {
+        if (err) {
+          Logger.debug('CACHE SET ERROR');
+          Logger.debug(err);
+          return reject(err);
+        }
+        resolve();
+      });
+    });
+  };
+
+  const delAsync = (key) => {
+    return new Promise((resolve, reject) => {
+      client.del(key, (err) => {
+        if (err) {
+          Logger.debug('CACHE DEL ERROR');
+          Logger.debug(err);
+          return resolve(err);
+        }
+        resolve();
+      });
+    });
+  };
 
   const get = (key, callback) => {
     client.get(key, (err, val) => {
       if (err) {
         Logger.debug('CACHE GET ERROR');
         Logger.debug(err);
-        callback(null);
-      } else {
-        callback(val);
+        return callback(null);
       }
+      callback(val);
     });
   };
 
@@ -33,10 +71,9 @@ export default (opt) => {
       if (err) {
         Logger.debug('CACHE SET ERROR');
         Logger.debug(err);
-        callback(err);
-      } else {
-        callback(null);
+        return callback(err);
       }
+      callback(null);
     });
   };
 
@@ -45,10 +82,9 @@ export default (opt) => {
       if (err) {
         Logger.debug('CACHE DEL ERROR');
         Logger.debug(err);
-        callback(err);
-      } else {
-        callback(null);
+        return callback(err);
       }
+      callback(null);
     });
   };
 

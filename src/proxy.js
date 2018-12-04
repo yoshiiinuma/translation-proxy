@@ -18,6 +18,7 @@ import createCache from '../src/cache.js';
 const conf = loadConfig('./config/config.json');
 
 //const translate = getTranslator(conf);
+const cache = createCache(conf);
 
 const notFound = (res) => {
   Logger.info('404 Not Found');
@@ -73,11 +74,11 @@ const getKey = (opts, lang) => {
 };
 
 const getCache = async (opts, lang) => {
-  return await cache.get(getKey(opts, lang));
+  return await cache.getAsync(getKey(opts, lang));
 }
 
 const setCache = async (opts, lang, val) => {
-  return cache.set(getKey(opts, lang), val));
+  return await cache.setAsync(getKey(opts, lang), val));
 }
 
 const serve = (req, res) => {
