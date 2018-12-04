@@ -12,10 +12,6 @@ export default (opt) => {
     db: opt.db || 0
   });
 
-  //const getAsync = async promisify(client.get).bind(client);
-  //const setAsync = async promisify(client.set).bind(client);
-  //const delAsync = async promisify(client.del).bind(client);
-
   const getAsync = (key) => {
     return new Promise((resolve, reject) => {
       client.get(key, (err, val) => {
