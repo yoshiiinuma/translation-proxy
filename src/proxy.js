@@ -48,7 +48,6 @@ const alertJs =
 
 const injectAlert = (html) => {
   try {
-
     const $ = cheerio.load(html);
     $(alertJs).appendTo('body');
     return $.html();
@@ -184,14 +183,14 @@ const serve = async (req, res) => {
         Logger.error('Proxy#serve Translation Failed');
         Logger.error(err);
         res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
-        res.end(original.buffer);
+        res.end(zlib.gzipSync(injectAlert(doc)));
         return;
       }
       Logger.info('SERVER RESPONSE END: RETURNING TRASLATED PAGE FROM CACHED');
       res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       const gzipped = zlib.gzipSync(translatedHtml);
       res.end(gzipped);
-      saveResponse(opts, lang, savedHeader, gzipped, () => {});
+      saveResponse(opts, lang, savedRes, gzipped, () => {});
       return;
     });
   }
@@ -307,7 +306,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
           if (err) {
             Logger.error('Proxy#startProxyRequest Translation Failed');
             Logger.error(err);
-            res.end(buffer);
+            res.end(zlib.gzipSync(injectAlert(doc)));
           } else {
             const gzipped = zlib.gzipSync(translatedHtml);
             res.end(gzipped);
