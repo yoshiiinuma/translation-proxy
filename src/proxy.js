@@ -156,27 +156,25 @@ const serve = async (req, res) => {
   let proxyReq = null;
 
   if (lang) {
-    //const translated = await getCache(opts, lang);
     const translated = await getSavedResponse(opts, lang);
     if (translated) {
+      done = true;
       const savedRes = translated.res
       Logger.info('SERVER RESPONSE END: RETURNING CACHED TRANSLATED');
       res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       res.end(translated.buffer);
-      done = true;
       return;
     }
   }
 
-    //const original = await getCache(opts);
   const original = await getSavedResponse(opts);
   if (original) {
+    done = true;
     const savedRes = original.res
     if (!lang) {
       Logger.info('SERVER RESPONSE END: RETURNING CACHED ORIGINAL');
       res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       res.end(original.buffer);
-      done = true;
       return;
     }
     const doc = uncompress(original.buffer, savedRes.encoding);
@@ -187,16 +185,13 @@ const serve = async (req, res) => {
         Logger.error(err);
         res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
         res.end(original.buffer);
-        done = true;
         return;
       }
       Logger.info('SERVER RESPONSE END: RETURNING TRASLATED PAGE FROM CACHED');
       res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       const gzipped = zlib.gzipSync(translatedHtml);
       res.end(gzipped);
-      //setCache(opts, lang, gzipped, () => {});
       saveResponse(opts, lang, savedHeader, gzipped, () => {});
-      done = true;
       return;
     });
   }
@@ -213,7 +208,7 @@ const serve = async (req, res) => {
 
   req.on('end', () => {
     Logger.info('CLIENT REQUEST END');
-    Logger.debug('########################I#############################################');
+    Logger.debug('#####################################################################');
     if (proxyReq) proxyReq.end();
   });
 
@@ -305,7 +300,6 @@ const startProxyRequest = (res, proxy, opts, lang) => {
         return;
       }
       const buffer = Buffer.concat(body);
-      //setCache(opts, null, buffer, () => {});
       saveResponse(opts, null, savedHeader, buffer, () => {});
       if (lang) {
         const doc = uncompress(buffer, encoding);
@@ -314,11 +308,9 @@ const startProxyRequest = (res, proxy, opts, lang) => {
             Logger.error('Proxy#startProxyRequest Translation Failed');
             Logger.error(err);
             res.end(buffer);
-            //res.end(zlib.gzipSync(injectAlert(doc)));
           } else {
             const gzipped = zlib.gzipSync(translatedHtml);
             res.end(gzipped);
-            //setCache(opts, lang, gzipped, () => {});
             saveResponse(opts, lang, savedHeader, gzipped, () => {});
           }
         });
