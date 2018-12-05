@@ -20,13 +20,13 @@ const page = createHtmlPageTranslator(html1, conf);
 
 //describe('page-translator#translateAll', () => {
 //  //const html = fs.readFileSync('./test/test.html').toString();
-//  const html = fs.readFileSync('./spo-faq.html').toString();
+//  const html = fs.readFileSync('./test/spo-faq.html').toString();
 //  const page = createHtmlPageTranslator(html, conf);
-//  const sorted = page.sortOutBySize(['#header', '#main', '#footer'], 50000);
+//  const sorted = page.sortOutBySize(['#header', '#main', '#footer'], 8000, 500);
 //
 //  it('translate html page by using API', () => {
 //    page.showSorted(sorted);
-//    page.translateAll(['#header', '#main', '#footer'], 'ja', 50000, (err, rslt) => {
+//    page.translateAll(['#header', '#main', '#footer'], 'ja', 8000, 500, (err, rslt) => {
 //      if (err) {
 //        console.log(err);
 //      } else {
@@ -39,7 +39,7 @@ const page = createHtmlPageTranslator(html1, conf);
 //describe('page-translator#translatePortion', () => {
 //  const html = fs.readFileSync('./test/test.html').toString();
 //  const page = createHtmlPageTranslator(html, conf);
-//  const sorted = page.sortOutBySize('#main', 1000);
+//  const sorted = page.sortOutBySize('#main', 1000, 300);
 //  const components = sorted[3];
 //
 //  it('translate components by using API', () => {
@@ -91,7 +91,7 @@ describe('page-translator#hasText', () => {
 
 describe('page-translator#replaceTexts', () => {
   const page = createHtmlPageTranslator(html1, conf);
-  const sorted = page.sortOutBySize('body', 15);
+  const sorted = page.sortOutBySize('body', 15, 15);
   const components = sorted[6];
   const translated = [
      { translatedText: 'XXXX' },
@@ -110,7 +110,7 @@ describe('page-translator#replaceTexts', () => {
 });
 
 describe('page-translator#createPostData', () => {
-  const sorted = page.sortOutBySize('body', 15);
+  const sorted = page.sortOutBySize('body', 15, 15);
 
   it('returns Google Cloud Translation API post data', () => {
     expect(page.createPostData(sorted[6], 'ja')).to.eql({
@@ -123,7 +123,7 @@ describe('page-translator#createPostData', () => {
 });
 
 describe('page-translator#extractTextForTranslation', () => {
-  const sorted = page.sortOutBySize('body', 15);
+  const sorted = page.sortOutBySize('body', 15, 15);
 
   it('extract text for translation from components', () => {
     expect(page.extractTextForTranslation(sorted[0])).to.eql(['menu 1', 'menu 2']);
@@ -136,7 +136,7 @@ describe('page-translator#extractTextForTranslation', () => {
 
 describe('page-translator#sortOutBySize', () => {
   context('when given 400 as limit size', () => {
-    const sorted = page.sortOutBySize('body', 400);
+    const sorted = page.sortOutBySize('body', 400, 400);
 
     it('returns components sorted out by size', () => {
       expect(sorted.length).to.be.equal(3);
@@ -147,7 +147,7 @@ describe('page-translator#sortOutBySize', () => {
   });
 
   context('when given 200 as limit size', () => {
-    const sorted = page.sortOutBySize('body', 200);
+    const sorted = page.sortOutBySize('body', 200, 200);
 
     it('returns components sorted out by size', () => {
       expect(sorted.length).to.be.equal(6);
@@ -161,7 +161,7 @@ describe('page-translator#sortOutBySize', () => {
   });
 
   context('when given 100 as limit size', () => {
-    const sorted = page.sortOutBySize('body', 100);
+    const sorted = page.sortOutBySize('body', 100, 100);
 
     it('returns components sorted out by size', () => {
       expect(sorted.length).to.be.equal(6);
@@ -175,7 +175,7 @@ describe('page-translator#sortOutBySize', () => {
   });
 
   context('when given 20 as limit size', () => {
-    const sorted = page.sortOutBySize('body', 20);
+    const sorted = page.sortOutBySize('body', 20, 20);
 
     it('returns components sorted out by size', () => {
       expect(sorted.length).to.be.equal(9);
@@ -192,7 +192,7 @@ describe('page-translator#sortOutBySize', () => {
   });
 
   context('when given 15 as limit size', () => {
-    const sorted = page.sortOutBySize('body', 15);
+    const sorted = page.sortOutBySize('body', 15, 15);
 
     it('returns components sorted out by size', () => {
       expect(sorted.length).to.be.equal(10);

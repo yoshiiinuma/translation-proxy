@@ -43,7 +43,7 @@ const clientError = (e, socket) => {
 const alertJs =
 `<script>
   function displayAlert() { alert('Translation service is currently not available. Please try again later.') };
-  setTimeout(displayAlert, 2000);
+  setTimeout(displayAlert, 1000);
 </script>`;
 
 const injectAlert = (html) => {
@@ -338,7 +338,7 @@ const translatePage = (doc, lang, callback) => {
 
   //translate(doc, lang, (err, translatedHtml) => {
   const page = createHtmlPageTranslator(doc, conf);
-  page.translateAll(conf.translationSelectors, lang, 8000, (err, translatedHtml) => {
+  page.translateAll(conf.translationSelectors, lang, 12000, 250, (err, translatedHtml) => {
     if (err) {
       callback(err);
     } else {

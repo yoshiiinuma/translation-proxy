@@ -9,8 +9,15 @@ const DEFAULT_LIMIT = 5000;
 export default (html, conf) => {
   const $ = cheerio.load(html);
 
-  const translateAll = (selectors, lang, limit, callback) => {
-    const all = sortOutBySize(selectors, limit);
+  /**
+   * limit: Max text size to send to API
+   * threshold: Threshold that specifies how deep the parser goes down into the DOM tree.
+   *            If the size of a component is larger than this, parse its children.
+   *            Otherwise, stop parsing.
+   *
+   */
+  const translateAll = (selectors, lang, limit, threshold, callback) => {
+    const all = sortOutBySize(selectors, limit, threshold);
     logSorted(all);
 
     Logger.info('TRANSLATEALL BLOCK SIZE: ' + all.length);
@@ -78,7 +85,7 @@ export default (html, conf) => {
     }
   };
 
-  const sortOutBySize = (selectors, limit) => {
+  const sortOutBySize = (selectors, limit, threshold) => {
     if (!selectors) selectors = ['body'];
     if (!Array.isArray(selectors)) selectors = [selectors];
     if (selectors.length === 0) selectors = ['body'];
@@ -91,7 +98,7 @@ export default (html, conf) => {
       const x = $(elm);
       const size = x.html().length;
 
-      if (!hasText(x) && size > limit) {
+      if (!hasText(x) && size > threshold) {
         x.children().each((i, e) => dfs(e));
         return;
       }
