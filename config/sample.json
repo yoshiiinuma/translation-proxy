@@ -1,5 +1,7 @@
 {
   "translationSelectors": ["#header", "#main", "#footer"],
+  "maxTextPerRequest": 12000,
+  "domBreakdownThreshold": 250,
   "keyPath": "/path/to/key.json",
   "gcloudPath": "/path/to/google-cloud-sdk/bin/gcloud",
   "httpPort": 8080,

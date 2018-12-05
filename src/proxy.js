@@ -338,7 +338,7 @@ const translatePage = (doc, lang, callback) => {
 
   //translate(doc, lang, (err, translatedHtml) => {
   const page = createHtmlPageTranslator(doc, conf);
-  page.translateAll(conf.translationSelectors, lang, 12000, 250, (err, translatedHtml) => {
+  page.translateAll(conf.translationSelectors, lang, conf.maxTextPerRequest, conf.domBreakdownThreshold, (err, translatedHtml) => {
     if (err) {
       callback(err);
     } else {
