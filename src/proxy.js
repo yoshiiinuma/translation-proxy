@@ -12,8 +12,8 @@ import crypto from 'crypto';
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
 //import getTranslator from './translate.js';
-import createHtmlPageTranslator from '../src/page-translator.js';
-import createCache from '../src/cache.js';
+import createHtmlPageTranslator from './page-translator.js';
+import createCache from './cache.js';
 
 const conf = loadConfig('./config/config.json');
 
