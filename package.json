@@ -2,19 +2,31 @@
   "name": "translation-proxy",
   "version": "1.0.0",
   "description": "The proxy server translates the contents from the origin by using Google Cloud Translation API",
-  "main": "dist/bundle.js",
+  "main": "dist/proxy.js",
   "scripts": {
     "exec": "babel-node src/index.js",
     "serv": "babel-node src/proxy.js",
-    "build": "babel src --out-dir dist",
+    "build": "babel src --out-dir dist -s",
     "server": "nodemon --watch dist",
     "watch": "webpack --watch --mode development",
-    "webpack-build": "webpack src/index.js dist/bundle.js --mode development",
+    "webpack-build": "webpack src/proxy.js --mode development",
     "test": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/**/*.{js,es6}' --exit"
   },
   "babel": {
     "presets": [
       "@babel/preset-env"
+    ],
+    "plugins": [
+      "@babel/plugin-transform-async-to-generator",
+      [
+        "@babel/plugin-transform-runtime",
+        {
+          "corejs": false,
+          "helpers": true,
+          "regenerator": true,
+          "useESModules": false
+        }
+      ]
     ]
   },
   "author": "Yoshiaki Iinuma",
@@ -23,15 +35,19 @@
     "@babel/cli": "^7.1.5",
     "@babel/core": "^7.1.6",
     "@babel/node": "^7.0.0",
+    "@babel/plugin-transform-async-to-generator": "^7.2.0",
+    "@babel/plugin-transform-runtime": "^7.2.0",
     "@babel/preset-env": "^7.1.6",
     "@babel/register": "^7.0.0",
     "babel-loader": "^8.0.4",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
     "webpack": "^4.25.1",
-    "webpack-cli": "^3.1.2"
+    "webpack-cli": "^3.1.2",
+    "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {
+    "@babel/runtime": "^7.2.0",
     "cheerio": "^1.0.0-rc.2",
     "dateformat": "^3.0.3",
     "fs-extra": "^7.0.1",

@@ -1,9 +1,15 @@
+var path = require('path');
+var nodeExternals = require('webpack-node-externals');
+
 module.exports = {
-  entry: "src/index.js",
+  target: 'node',
+  entry: "src/proxy.js",
   output: {
-    filename: "dist/bundle.js"
+    path: path.resolve(__dirname, 'build'),
+    filename: 'server.js'
   },
-  watch: true,
+  externals: [ nodeExternals() ],
+  watch: false,
   module: {
     rules: [
       {
@@ -12,7 +18,8 @@ module.exports = {
         use: {
           loader: "babel-loader",
           options: {
-            presets: ["@babel/preset-env"]
+            presets: ["@babel/preset-env"],
+            plugins: ["@babel/transform-runtime"]
           }
         }
       }
