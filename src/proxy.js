@@ -35,8 +35,10 @@ const serverError = (e, res) => {
 
 const clientError = (e, socket) => {
   Logger.info('400 Bad Request');
-  Logger.info(e);
-  Logger.info(util.inspect(socket));
+  if (e) {
+    Logger.info(e);
+    Logger.info(util.inspect(socket));
+  }
   socket.end('Error 400: Bad Request');
 };
 
@@ -106,21 +108,25 @@ const serve = async (req, res) => {
   const forwardedFor = req.headers['x-forwarded-for'] || req.headers['forwarded'] || remoteIp;
   let lang = null;
   let host = req.headers.host;
-  //let port = (req.connection.encrypted) ? 443 : 80;
   let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
 
-  console.log('CLIENT REQUEST START: ' +scheme + '://' + host + reqUrl.path);
+  console.log('CLIENT REQUEST START: ' + scheme + '://' + host + reqUrl.path);
   const rgxHost = /^(.+):(\d+)$/;
   const matched = rgxHost.exec(host);
   if (matched) {
     host = matched[1];
-    //port = parseInt(matched[2]);
+    port = parseInt(matched[2]);
   }
 
   Logger.debug('#####################################################################');
-  Logger.info('CLIENT REQUEST START: ' +scheme + '://' + host + reqUrl.path);
+  Logger.info('CLIENT REQUEST START: ' + scheme + '://' + host + reqUrl.path);
   Logger.debug(req.rawHeaders);
 
+  if (!conf.proxiedHosts[host]) {
+    Logger.debug('NOT PROXIED: ' + scheme + '://' + host + reqUrl.path);
+    clientError(null, res);
+    return;
+  }
   let path = reqUrl.pathname;
 
   let params = [];
