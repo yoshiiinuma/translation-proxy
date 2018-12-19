@@ -109,6 +109,7 @@ const serve = async (req, res) => {
   //let port = (req.connection.encrypted) ? 443 : 80;
   let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
 
+  console.log('CLIENT REQUEST START: ' +scheme + '://' + host + reqUrl.path);
   const rgxHost = /^(.+):(\d+)$/;
   const matched = rgxHost.exec(host);
   if (matched) {
@@ -183,12 +184,14 @@ const serve = async (req, res) => {
         Logger.error('Proxy#serve Translation Failed');
         Logger.error(err);
         res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
-        res.end(zlib.gzipSync(injectAlert(doc)));
+        //res.end(zlib.gzipSync(injectAlert(doc)));
+        res.end(compress(injectAlert(doc), encoding));
         return;
       }
       Logger.info('SERVER RESPONSE END: RETURNING TRASLATED PAGE FROM CACHED');
       res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
-      const gzipped = zlib.gzipSync(translatedHtml);
+      //const gzipped = zlib.gzipSync(translatedHtml);
+      const gzipped = compress(translatedHtml, encoding);
       res.end(gzipped);
       saveResponse(opts, lang, savedRes, gzipped, () => {});
       return;
@@ -232,6 +235,16 @@ const uncompress = (text, encoding) => {
   return text;
 }
 
+const compress = (text, encoding) => {
+  if (encoding === 'gzip') {
+    return zlib.gzipSync(text).toString();
+  } else if (encoding === 'deflate') {
+    //return zlib.deflateRawSync(text).toString();
+    return zlib.deflateSync(text).toString();
+  }
+  return text;
+}
+
 const logProxyRequest = (opts) => {
   let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
   if (opts.port) uri += ':' + opts.port;
@@ -246,10 +259,11 @@ const logProxyResponse = (res) => {
   const type = res.headers['content-type'] || '';
   const transfer = res.headers['transfer-encoding'] || '';
   const len = res.headers['content-length'] || '';
-  const msg = res.statusCode + ' ' + res.statusMessage + ' ' + len + ' ' +
-    type + ' ' + encoding + ' ' + transfer;
-  Logger.info('PROXY RESPONSE RECEIVED: ' + msg);
+  const msg = res.statusCode + ' ' + res.statusMessage + ' LEN: ' + len + ' CONTENT-TYPE: ' +
+    type + ' CONTENT-ENCODING: ' + encoding + ' TRANSFER-ENCODING: ' + transfer;
+  console.log('PROXY RESPONSE RECEIVED: ' + msg);
 
+  Logger.debug('PROXY RESPONSE RECEIVED: ' + msg);
   Logger.debug('---------------------------------------------------------------------------');
   Logger.debug(res.headers);
 };
@@ -266,11 +280,11 @@ const startProxyRequest = (res, proxy, opts, lang) => {
     logProxyResponse(proxyRes);
 
     let headers = Object.assign({}, proxyRes.headers);
-    headers['access-control-allow-origin'] = opts.host;
     if (isHtml || lang) {
+      headers['access-control-allow-origin'] = opts.host;
       //headers['transfer-encoding'] = 'identity';
       delete headers['transfer-encoding'];
-      headers['content-encoding'] = 'gzip';
+      //headers['content-encoding'] = 'gzip';
     }
     const savedHeader = {
       statusCode: proxyRes.statusCode,
