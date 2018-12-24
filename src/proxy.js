@@ -100,6 +100,8 @@ const saveResponse = async (opts, lang, header, body) => {
   return true;
 }
 
+var cnt = 0;
+
 const serve = async (req, res) => {
   const reqUrl = url.parse(req.url, true);
   const proxy = (req.connection.encrypted) ? https : http;
@@ -110,7 +112,9 @@ const serve = async (req, res) => {
   let host = req.headers.host;
   let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
 
-  console.log('CLIENT REQUEST START: ' + scheme + '://' + host + reqUrl.path);
+  cnt++;
+  let id = cnt.toString().padStart(12, ' ');
+  console.log(id + ' CLIENT REQUEST START: ' + scheme + '://' + host + reqUrl.path);
   const rgxHost = /^(.+):(\d+)$/;
   const matched = rgxHost.exec(host);
   if (matched) {
@@ -119,11 +123,11 @@ const serve = async (req, res) => {
   }
 
   Logger.debug('#####################################################################');
-  Logger.info('CLIENT REQUEST START: ' + scheme + '://' + host + reqUrl.path);
+  Logger.info(id + ' CLIENT REQUEST START: ' + scheme + '://' + host + reqUrl.path);
   Logger.debug(req.rawHeaders);
 
   if (!conf.proxiedHosts[host]) {
-    Logger.debug('NOT PROXIED: ' + scheme + '://' + host + reqUrl.path);
+    Logger.debug(id + ' NOT PROXIED: ' + scheme + '://' + host + reqUrl.path);
     clientError(null, res);
     return;
   }
@@ -150,7 +154,8 @@ const serve = async (req, res) => {
     host: host,
     port: port,
     path,
-    headers
+    headers,
+    id
   };
   if (scheme === 'https') {
     opts.rejectUnauthorized = false;
@@ -166,7 +171,8 @@ const serve = async (req, res) => {
     if (translated) {
       done = true;
       const savedRes = translated.res
-      Logger.info('SERVER RESPONSE END: RETURNING CACHED TRANSLATED');
+      console.log(id + ' SERVER RESPONSE END: RETURNING CACHED TRANSLATED: ' + translated.buffer.length + ' == ' + savedRes.headers['content-length']);
+      Logger.info(id + ' SERVER RESPONSE END: RETURNING CACHED TRANSLATED: ' + translated.buffer.length + ' == ' + savedRes.headers['content-length']);
       res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       res.end(translated.buffer);
       return;
@@ -178,7 +184,8 @@ const serve = async (req, res) => {
     done = true;
     const savedRes = original.res
     if (!lang) {
-      Logger.info('SERVER RESPONSE END: RETURNING CACHED ORIGINAL');
+      console.log(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
+      Logger.info(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
       res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       res.end(original.buffer);
       return;
@@ -186,19 +193,22 @@ const serve = async (req, res) => {
     const doc = uncompress(original.buffer, savedRes.encoding);
     translatePage(doc, lang, (err, translatedHtml) => {
       if (err) {
-        Logger.info('SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRASLATION ERROR');
-        Logger.error('Proxy#serve Translation Failed');
+        consoleo.log(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRASLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
+        Logger.info(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRASLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
+        Logger.error(id + ' Proxy#serve Translation Failed');
         Logger.error(err);
         res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
         //res.end(zlib.gzipSync(injectAlert(doc)));
         res.end(compress(injectAlert(doc), savedRes.encoding));
         return;
       }
-      Logger.info('SERVER RESPONSE END: RETURNING TRASLATED PAGE FROM CACHED');
-      Logger.debug(savedRes.headers);
-      res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       //const gzipped = zlib.gzipSync(translatedHtml);
       const gzipped = compress(translatedHtml, savedRes.encoding);
+      savedRes.headers['content-length'] = gzipped.length;
+      console.log(id + ' SERVER RESPONSE END: RETURNING TRASLATED PAGE FROM CACHED: ' + original.buffer.length + ' => ' + gzipped.length + ' == ' + savedRes.headers['content-length']);
+      Logger.info(id + ' SERVER RESPONSE END: RETURNING TRASLATED PAGE FROM CACHED: ' + original.buffer.length + ' => ' + gzipped.length + ' == ' + savedRes.headers['content-length']);
+      Logger.debug(savedRes.headers);
+      res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
       res.end(gzipped);
       saveResponse(opts, lang, savedRes, gzipped, () => {});
       return;
@@ -206,29 +216,29 @@ const serve = async (req, res) => {
   }
 
   if (!done) {
-    Logger.info('SERVER !!! Start Proxy Request !!!');
+    Logger.info(id + ' SERVER !!! Start Proxy Request !!!');
     proxyReq = startProxyRequest(res, proxy, opts, lang);
   }
 
   req.on('data', (chunk) => {
-    Logger.info('CLIENT REQUEST DATA');
+    Logger.info(id + ' CLIENT REQUEST DATA');
     if (proxyReq) proxyReq.write(chunk);
   });
 
   req.on('end', () => {
-    Logger.info('CLIENT REQUEST END');
+    Logger.info(id + ' CLIENT REQUEST END');
     Logger.debug('#####################################################################');
     if (proxyReq) proxyReq.end();
   });
 
   req.on('error', (e) => {
-    Logger.error('CLIENT REQUEST ERROR');
+    Logger.error(id + ' CLIENT REQUEST ERROR');
     Logger.debug('####################################################################');
     serverError(e, res);
   });
 
   res.on('error', (e) => {
-    Logger.error('SERVER RESPONSE ERROR');
+    Logger.error(id + ' SERVER RESPONSE ERROR');
     serverError(e, res);
   });
 };
@@ -258,20 +268,21 @@ const logProxyRequest = (opts) => {
   if (opts.port) uri += ':' + opts.port;
   uri += opts.path;
   Logger.debug('===========================================================================');
-  Logger.info('PROXY REQUEST SENT: ' + uri);
+  Logger.info(opts.id + ' PROXY REQUEST SENT: ' + uri);
   Logger.debug(opts);
 };
 
-const logProxyResponse = (res) => {
+const logProxyResponse = (res, opts) => {
   const encoding = res.headers['content-encoding'] || '';
   const type = res.headers['content-type'] || '';
   const transfer = res.headers['transfer-encoding'] || '';
   const len = res.headers['content-length'] || '';
-  const msg = res.statusCode + ' ' + res.statusMessage + ' LEN: ' + len + ' CONTENT-TYPE: ' +
+  const url = opts.protocol + '//' + opts.host + opts.path;
+  const msg = url + ' ' + res.statusCode + ' ' + res.statusMessage + ' LEN: ' + len + ' CONTENT-TYPE: ' +
     type + ' CONTENT-ENCODING: ' + encoding + ' TRANSFER-ENCODING: ' + transfer;
-  console.log('PROXY RESPONSE RECEIVED: ' + msg);
+  console.log(cnt.toString().padStart(12, ' ') + ' PROXY RESPONSE RECEIVED: ' + msg);
 
-  Logger.debug('PROXY RESPONSE RECEIVED: ' + msg);
+  Logger.debug(opts.id + ' PROXY RESPONSE RECEIVED: ' + msg);
   Logger.debug('---------------------------------------------------------------------------');
   Logger.debug(res.headers);
 };
@@ -285,7 +296,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
 
     let body = [];
 
-    logProxyResponse(proxyRes);
+    logProxyResponse(proxyRes, opts);
 
     let headers = Object.assign({}, proxyRes.headers);
     if (isHtml || lang) {
@@ -300,23 +311,25 @@ const startProxyRequest = (res, proxy, opts, lang) => {
       encoding,
       headers
     };
-    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
+    if (!(isHtml || lang)) {
+      res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
+    }
     //proxyRes.setEncoding('utf8');
 
     proxyRes.on('error', (e) => {
-      Logger.error('PROXY RESPONSE ERROR');
+      Logger.error(opts.id + ' PROXY RESPONSE ERROR');
       serverError(e, res);
     });
 
     proxyRes.on('data', (chunk) => {
-      Logger.info('PROXY RESPONSE DATA');
+      Logger.info(opts.id + ' PROXY RESPONSE DATA');
       body.push(chunk);
       if (!(isHtml || lang)) res.write(chunk);
     });
 
     proxyRes.on('end', () => {
-      Logger.info('PROXY RESPONSE END');
       if (!(isHtml || lang) || body.length === 0) {
+	Logger.info(opts.id + ' PROXY RESPONSE END');
         res.end();
         return;
       }
@@ -326,29 +339,40 @@ const startProxyRequest = (res, proxy, opts, lang) => {
         const doc = uncompress(buffer, encoding);
         translatePage(doc, lang, (err, translatedHtml) => {
           if (err) {
-            Logger.error('Proxy#startProxyRequest Translation Failed');
+            Logger.error(opts.id + 'Proxy#startProxyRequest Translation Failed');
             Logger.error(err);
             //res.end(zlib.gzipSync(injectAlert(doc)));
-            res.end(compress(injectAlert(doc), encoding));
+            const gzipped = compress(injectAlert(doc), encoding);
+            headers['content-length'] = gzipped.length
+	    console.log(opts.id + ' PROXY RESPONSE END: RETURNING ERROR INJECTED PAGE: ' + gzipped.length + ' == ' + headers['content-length']);
+	    Logger.info(opts.id + ' PROXY RESPONSE END: RETURNING ERROR INJECTED PAGE: ' + gzipped.length + ' == ' + headers['content-length']);
+	    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
+            res.end(gzipped);
           } else {
             //const gzipped = zlib.gzipSync(translatedHtml);
             const gzipped = compress(translatedHtml, encoding);
+            savedHeader.headers['content-length'] = gzipped.length;
+	    console.log(opts.id + ' PROXY RESPONSE END: RETURNING TRANSLATED PAGE: ' + gzipped.length + ' == ' + savedHeader.headers['content-length']);
+	    Logger.info(opts.id + ' PROXY RESPONSE END: RETURNING TRANSLATED PAGE: ' + gzipped.length + ' == ' + savedHeader.headers['content-length']);
+	    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedHeader.headers)
             res.end(gzipped);
             saveResponse(opts, lang, savedHeader, gzipped, () => {});
           }
         });
       } else {
+        console.log(opts.id + ' PROXY RESPONSE END: BUFFERED PAGE: ' + buffer.length + ' == ' + savedHeader.headers['content-length']);
+        res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedHeader.headers)
         res.end(buffer);
       }
 
-      Logger.info('PROXY REQUEST END');
+      Logger.info(opts.id + ' PROXY REQUEST END');
       Logger.debug('===========================================================================');
     });
 
   });
 
   proxyReq.on('error', (e) => {
-    Logger.error('PROXY REQUEST ERROR');
+    Logger.error(opts.id + ' PROXY REQUEST ERROR');
     Logger.debug('===========================================================================');
     serverError(e, res);
   });
