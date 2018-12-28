@@ -193,10 +193,10 @@ const serve = async (req, res) => {
     const doc = uncompress(original.buffer, savedRes.encoding);
     translatePage(doc, lang, (err, translatedHtml) => {
       if (err) {
-        consoleo.log(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRASLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
-        Logger.info(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRASLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
         Logger.error(id + ' Proxy#serve Translation Failed');
         Logger.error(err);
+        console.log(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRANSLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
+        Logger.info(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRANSLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
         res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
         //res.end(zlib.gzipSync(injectAlert(doc)));
         res.end(compress(injectAlert(doc), savedRes.encoding));
