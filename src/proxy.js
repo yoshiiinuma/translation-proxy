@@ -193,10 +193,10 @@ const serve = async (req, res) => {
     const doc = uncompress(original.buffer, savedRes.encoding);
     translatePage(doc, lang, (err, translatedHtml) => {
       if (err) {
-        consoleo.log(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRASLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
-        Logger.info(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRASLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
         Logger.error(id + ' Proxy#serve Translation Failed');
         Logger.error(err);
+        console.log(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRANSLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
+        Logger.info(id + ' SERVER RESPONSE END: RETURNING CACHED ORIGINAL < TRANSLATION ERROR: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
         res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
         //res.end(zlib.gzipSync(injectAlert(doc)));
         res.end(compress(injectAlert(doc), savedRes.encoding));
@@ -344,17 +344,17 @@ const startProxyRequest = (res, proxy, opts, lang) => {
             //res.end(zlib.gzipSync(injectAlert(doc)));
             const gzipped = compress(injectAlert(doc), encoding);
             headers['content-length'] = gzipped.length
-	    console.log(opts.id + ' PROXY RESPONSE END: RETURNING ERROR INJECTED PAGE: ' + gzipped.length + ' == ' + headers['content-length']);
-	    Logger.info(opts.id + ' PROXY RESPONSE END: RETURNING ERROR INJECTED PAGE: ' + gzipped.length + ' == ' + headers['content-length']);
-	    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
+            console.log(opts.id + ' PROXY RESPONSE END: RETURNING ERROR INJECTED PAGE: ' + gzipped.length + ' == ' + headers['content-length']);
+            Logger.info(opts.id + ' PROXY RESPONSE END: RETURNING ERROR INJECTED PAGE: ' + gzipped.length + ' == ' + headers['content-length']);
+            res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
             res.end(gzipped);
           } else {
             //const gzipped = zlib.gzipSync(translatedHtml);
             const gzipped = compress(translatedHtml, encoding);
             savedHeader.headers['content-length'] = gzipped.length;
-	    console.log(opts.id + ' PROXY RESPONSE END: RETURNING TRANSLATED PAGE: ' + gzipped.length + ' == ' + savedHeader.headers['content-length']);
-	    Logger.info(opts.id + ' PROXY RESPONSE END: RETURNING TRANSLATED PAGE: ' + gzipped.length + ' == ' + savedHeader.headers['content-length']);
-	    res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedHeader.headers)
+            console.log(opts.id + ' PROXY RESPONSE END: RETURNING TRANSLATED PAGE: ' + gzipped.length + ' == ' + savedHeader.headers['content-length']);
+            Logger.info(opts.id + ' PROXY RESPONSE END: RETURNING TRANSLATED PAGE: ' + gzipped.length + ' == ' + savedHeader.headers['content-length']);
+            res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedHeader.headers)
             res.end(gzipped);
             saveResponse(opts, lang, savedHeader, gzipped, () => {});
           }
