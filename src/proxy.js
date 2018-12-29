@@ -431,7 +431,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
       const buffer = Buffer.concat(body);
       saveResponse(opts, null, savedHeader, buffer, () => {});
       if (lang) {
-        sendTranslation(res, buffer, encoding, savedHeader, logPrefix);
+        sendTranslation(res, buffer, encoding, lang, savedHeader, logPrefix);
       } else {
         console.log(logPrefix + ': BUFFERED PAGE: ' + buffer.length + ' == ' + savedHeader.headers['content-length']);
         res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedHeader.headers)
@@ -453,7 +453,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
   return proxyReq;
 };
 
-const sendTranslation = (res, buffer, encoding, meta, logPrefix) => {
+const sendTranslation = (res, buffer, encoding, lang, meta, logPrefix) => {
   const doc = uncompress(buffer, encoding);
   let gzipped;
   let pageType = 'TRANSLATED PAGE';
@@ -470,7 +470,7 @@ const sendTranslation = (res, buffer, encoding, meta, logPrefix) => {
       meta.headers['content-length'] = gzipped.length;
       saveResponse(opts, lang, meta, gzipped, () => {});
     }
-    console.log(logPrefix + msg + meta.headers['content-length']);
+    console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
     Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
     res.writeHead(meta.statusCode, meta.statusMessage, meta.headers);
     res.end(gzipped);
