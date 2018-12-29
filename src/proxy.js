@@ -65,7 +65,13 @@ const getFullUrl = (opts, lang) => {
   let url = opts.protocol + '//' + opts.host;
   if (opts.port) url += ':' + opts.port;
   url += opts.path;
-  if (lang) url += '?lang=' + lang;
+  if (lang) {
+    if (url.includes('?')) {
+      url += '&lang=' + lang;
+    } else {
+      url += '?lang=' + lang;
+    }
+  }
   return url;
 };
 
