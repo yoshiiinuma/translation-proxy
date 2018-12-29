@@ -20,7 +20,7 @@ export default (html, conf) => {
     const all = sortOutBySize(selectors, limit, threshold);
     logSorted(all);
 
-    Logger.info('TRANSLATEALL BLOCK SIZE: ' + all.length);
+    Logger.info('TRANSLATEALL BLOCK SIZE: ' + all.length + ' Lang: ' + lang);
     createConnectionOption(conf)
       .then((apiOpts) => {
         return Promise.all(all.map((components, i) => {

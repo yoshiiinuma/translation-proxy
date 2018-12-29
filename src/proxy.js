@@ -108,7 +108,7 @@ const saveResponse = async (opts, lang, header, body) => {
 
 var cnt = 0;
 
-const serve = async (req, res) => {
+const serveOld = async (req, res) => {
   const reqUrl = url.parse(req.url, true);
   const proxy = (req.connection.encrypted) ? https : http;
   const scheme = (req.connection.encrypted) ? 'https' : 'http';
@@ -250,6 +250,130 @@ const serve = async (req, res) => {
   });
 };
 
+
+const serve = async (req, res) => {
+  const reqUrl = url.parse(req.url, true);
+  const proxy = (req.connection.encrypted) ? https : http;
+  const scheme = (req.connection.encrypted) ? 'https' : 'http';
+  const remoteIp = requestIp.getClientIp(req);
+  const forwardedFor = req.headers['x-forwarded-for'] || req.headers['forwarded'] || remoteIp;
+  let lang = null;
+  let host = req.headers.host;
+  let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
+
+  cnt++;
+  let id = cnt.toString().padStart(12, ' ');
+  const logPreCli = id + ' CLIENT REQUEST ';
+  const logPreSer = id + ' SERVER RESPONSE ';
+
+  const rgxHost = /^(.+):(\d+)$/;
+  const matched = rgxHost.exec(host);
+  if (matched) {
+    host = matched[1];
+    //port = parseInt(matched[2]);
+  }
+
+  Logger.debug('#####################################################################');
+  console.log(logPreCli + 'START: ' + scheme + '://' + host + reqUrl.path);
+  Logger.info(logPreCli + 'START: ' + scheme + '://' + host + reqUrl.path);
+  Logger.debug(req.rawHeaders);
+
+  if (!conf.proxiedHosts[host]) {
+    Logger.debug(logPreCli + 'NOT PROXIED: ' + scheme + '://' + host + reqUrl.path);
+    clientError(null, res);
+    return;
+  }
+  let path = reqUrl.pathname;
+
+  let params = [];
+  for(let key in reqUrl.query) {
+    if (key === 'lang') {
+      lang = reqUrl.query[key];
+    } else {
+      params.push(key + '=' + reqUrl.query[key]);
+    }
+  }
+  if (params.length > 0) path += '?' + params.join('&');
+
+  let headers = Object.assign({}, req.headers);
+  headers['X-Forwarded-For'] = forwardedFor;
+  headers['X-Forwarded-Proto'] = scheme;
+  headers['X-Real-IP'] = remoteIp;
+
+  let opts = {
+    protocol: scheme + ':',
+    method: req.method,
+    host: host,
+    port: port,
+    path,
+    headers,
+    id
+  };
+  if (scheme === 'https') {
+    opts.rejectUnauthorized = false;
+    opts.requestCert = true;
+    opts.agent = false;
+  }
+
+  let done = false;
+  let proxyReq = null;
+
+  if (lang) {
+    const translated = await getSavedResponse(opts, lang);
+    if (translated) {
+      done = true;
+      const savedRes = translated.res
+      console.log(logPreSer + 'END: RETURNING CACHED TRANSLATED: ' + translated.buffer.length + ' == ' + savedRes.headers['content-length']);
+      Logger.info(logPreSer + 'END: RETURNING CACHED TRANSLATED: ' + translated.buffer.length + ' == ' + savedRes.headers['content-length']);
+      res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
+      res.end(translated.buffer);
+      return;
+    }
+  }
+
+  const original = await getSavedResponse(opts);
+  if (original) {
+    done = true;
+    const savedRes = original.res
+    if (!lang) {
+      console.log(logPreSer + 'END: RETURNING CACHED ORIGINAL: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
+      Logger.info(logPreSer + 'END: RETURNING CACHED ORIGINAL: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
+      res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
+      res.end(original.buffer);
+      return;
+    }
+    savedRes.lang = lang;
+    sendTranslation(res, original.buffer, savedRes, logPreSer);
+  }
+
+  if (!done) {
+    Logger.info(logPreSer + '!!! Start Proxy Request !!!');
+    proxyReq = startProxyRequest(res, proxy, opts, lang);
+  }
+
+  req.on('data', (chunk) => {
+    Logger.info(logPreCli + 'DATA');
+    if (proxyReq) proxyReq.write(chunk);
+  });
+
+  req.on('end', () => {
+    Logger.info(logPreCli + 'END');
+    Logger.debug('#####################################################################');
+    if (proxyReq) proxyReq.end();
+  });
+
+  req.on('error', (e) => {
+    Logger.error(logPreCli + 'ERROR');
+    Logger.debug('####################################################################');
+    serverError(e, res);
+  });
+
+  res.on('error', (e) => {
+    Logger.error(logPreSer + 'ERROR');
+    serverError(e, res);
+  });
+};
+
 const uncompress = (text, encoding) => {
   if (encoding === 'gzip') {
     return zlib.gunzipSync(text).toString();
@@ -275,7 +399,7 @@ const logProxyRequest = (opts) => {
   if (opts.port) uri += ':' + opts.port;
   uri += opts.path;
   Logger.debug('===========================================================================');
-  Logger.info(opts.id + ' PROXY REQUEST SENT: ' + uri);
+  Logger.info(opts.id + ' PROXY REQUEST SEND: ' + uri);
   Logger.debug(opts);
 };
 
@@ -287,12 +411,13 @@ const logProxyResponse = (res, opts) => {
   const url = opts.protocol + '//' + opts.host + opts.path;
   const msg = url + ' ' + res.statusCode + ' ' + res.statusMessage + ' LEN: ' + len + ' CONTENT-TYPE: ' +
     type + ' CONTENT-ENCODING: ' + encoding + ' TRANSFER-ENCODING: ' + transfer;
-  console.log(cnt.toString().padStart(12, ' ') + ' PROXY RESPONSE RECEIVED: ' + msg);
+  console.log(opts.id.toString().padStart(12, ' ') + ' PROXY RESPONSE RCEIV: ' + msg);
 
-  Logger.debug(opts.id + ' PROXY RESPONSE RECEIVED: ' + msg);
+  Logger.debug(opts.id.toString().padStart(12, ' ') + ' PROXY RESPONSE RCEIV: ' + msg);
   Logger.debug('---------------------------------------------------------------------------');
   Logger.debug(res.headers);
 };
+
 const startProxyRequestOld = (res, proxy, opts, lang) => {
   logProxyRequest(opts);
 
@@ -406,9 +531,11 @@ const startProxyRequest = (res, proxy, opts, lang) => {
       delete headers['transfer-encoding'];
       //headers['content-encoding'] = 'gzip';
     }
-    const savedHeader = {
+    const savedRes = {
       statusCode: proxyRes.statusCode,
       statusMessage: proxyRes.statusMessage,
+      reqOpts: opts,
+      lang,
       encoding,
       headers
     };
@@ -435,12 +562,13 @@ const startProxyRequest = (res, proxy, opts, lang) => {
         return;
       }
       const buffer = Buffer.concat(body);
-      saveResponse(opts, null, savedHeader, buffer, () => {});
+      savedRes.headers['content-length'] = buffer.length;
+      saveResponse(opts, null, savedRes, buffer, () => {});
       if (lang) {
-        sendTranslation(res, buffer, encoding, lang, savedHeader, logPrefix);
+        sendTranslation(res, buffer, savedRes, logPrefix);
       } else {
-        console.log(logPrefix + ': BUFFERED PAGE: ' + buffer.length + ' == ' + savedHeader.headers['content-length']);
-        res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedHeader.headers)
+        console.log(logPrefix + 'BUFFERED PAGE: ' + buffer.length + ' == ' + savedRes.headers['content-length']);
+        res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedRes.headers)
         res.end(buffer);
       }
 
@@ -459,22 +587,22 @@ const startProxyRequest = (res, proxy, opts, lang) => {
   return proxyReq;
 };
 
-const sendTranslation = (res, buffer, encoding, lang, meta, logPrefix) => {
-  const doc = uncompress(buffer, encoding);
+const sendTranslation = (res, buffer, meta, logPrefix) => {
+  const doc = uncompress(buffer, meta.encoding);
   let gzipped;
   let pageType = 'TRANSLATED PAGE';
 
-  translatePage(doc, lang, (err, translatedHtml) => {
+  translatePage(doc, meta.lang, (err, translatedHtml) => {
     if (err) {
       Logger.error(logPrefix + 'TRANSLATION FAILED');
       Logger.error(err);
       pageType = 'ERROR INJECTED PAGE';
-      gzipped = compress(injectAlert(doc), encoding);
+      gzipped = compress(injectAlert(doc), meta.encoding);
       meta.headers['content-length'] = gzipped.length;
     } else {
-      gzipped = compress(translatedHtml, encoding);
+      gzipped = compress(translatedHtml, meta.encoding);
       meta.headers['content-length'] = gzipped.length;
-      saveResponse(opts, lang, meta, gzipped, () => {});
+      saveResponse(meta.reqOpts, meta.lang, meta, gzipped, () => {});
     }
     console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
     Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
