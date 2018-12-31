@@ -4,7 +4,6 @@ import util from 'util';
 import http from 'http';
 import https from 'https';
 import url from 'url';
-import zlib from 'zlib';
 import requestIp from 'request-ip';
 import cheerio from 'cheerio';
 import crypto from 'crypto';
@@ -13,6 +12,7 @@ import Logger from './logger.js';
 import { loadConfig } from './conf.js';
 import createHtmlPageTranslator from './page-translator.js';
 import createCache from './cache.js';
+import { compress, uncompress } from './compress.js';
 
 const conf = loadConfig('./config/config.json');
 
@@ -235,26 +235,6 @@ const serve = async (req, res) => {
     serverError(e, res);
   });
 };
-
-const uncompress = (text, encoding) => {
-  if (encoding === 'gzip') {
-    return zlib.gunzipSync(text).toString();
-  } else if (encoding === 'deflate') {
-    return zlib.inflateRawSync(text).toString();
-  }
-  return text;
-}
-
-const compress = (text, encoding) => {
-  Logger.debug('COMPRESS with: ' + encoding);
-  if (encoding === 'gzip') {
-    return zlib.gzipSync(text);
-  } else if (encoding === 'deflate') {
-    //return zlib.deflateRawSync(text).toString();
-    return zlib.deflateSync(text);
-  }
-  return text;
-}
 
 const logProxyRequest = (opts) => {
   let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
