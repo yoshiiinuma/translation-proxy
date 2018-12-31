@@ -78,7 +78,6 @@ const getFullUrl = (opts, lang) => {
 const getKey = (prefix, opts, lang) => {
   const reqStr = opts.method + '+' + getFullUrl(opts, lang);
   let key = prefix + crypto.createHash('md5').update(reqStr).digest('hex');
-  Logger.info('CACHE KEY: ' + key);
   return key;
 };
 
@@ -91,6 +90,10 @@ const setCache = async (opts, lang, val) => {
 }
 
 const getSavedResponse = async (opts, lang) => {
+  const headKey = getKey('HEAD-', opts, lang)
+  const pageKey = getKey('PAGE-', opts, lang)
+  Logger.info(opts.id + ' CACHE GET: ' + headKey);
+  Logger.info(opts.id + ' CACHE GET: ' + pageKey);
   const head = await cache.getAsync(getKey('HEAD-', opts, lang));
   const body = await cache.getAsync(getKey('PAGE-', opts, lang));
   if (!head || !body) return null;
@@ -101,8 +104,12 @@ const getSavedResponse = async (opts, lang) => {
 }
 
 const saveResponse = async (opts, lang, header, body) => {
-  await cache.setAsync(getKey('HEAD-', opts, lang), JSON.stringify(header));
-  await cache.setAsync(getKey('PAGE-', opts, lang), body);
+  const headKey = getKey('HEAD-', opts, lang)
+  const pageKey = getKey('PAGE-', opts, lang)
+  Logger.info(opts.id + ' CACHE SAVE: ' + headKey);
+  Logger.info(opts.id + ' CACHE SAVE: ' + pageKey);
+  await cache.setAsync(headKey, JSON.stringify(header));
+  await cache.setAsync(pageKey, body);
   return true;
 }
 
