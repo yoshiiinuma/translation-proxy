@@ -12,11 +12,11 @@ import { loadConfig } from './conf.js';
 import createHtmlPageTranslator from './page-translator.js';
 import createCache from './cache.js';
 import { compress, uncompress } from './compress.js';
-import { saveResponse, getSavedResponse } from './response-cache.js';
+import createResponseCache from './response-cache.js';
 
 const conf = loadConfig('./config/config.json');
 
-//const cache = createCache(conf);
+const ResponseCache = createResponseCache(conf);
 
 const notFound = (res) => {
   Logger.info('404 Not Found');
@@ -129,7 +129,7 @@ const serve = async (req, res) => {
   let proxyReq = null;
 
   if (lang) {
-    const translated = await getSavedResponse(opts, lang);
+    const translated = await ResponseCache.get(opts, lang);
     if (translated) {
       done = true;
       const savedRes = translated.res
@@ -141,7 +141,7 @@ const serve = async (req, res) => {
     }
   }
 
-  const original = await getSavedResponse(opts);
+  const original = await ResponseCache.get(opts);
   if (original) {
     done = true;
     const savedRes = original.res
@@ -259,7 +259,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
       }
       const buffer = Buffer.concat(body);
       savedRes.headers['content-length'] = buffer.length;
-      saveResponse(opts, null, savedRes, buffer, () => {});
+      ResponseCache.save(opts, null, savedRes, buffer, () => {});
       if (lang) {
         sendTranslation(res, buffer, savedRes, logPrefix);
       } else {
@@ -298,7 +298,7 @@ const sendTranslation = (res, buffer, meta, logPrefix) => {
     } else {
       gzipped = compress(translatedHtml, meta.encoding);
       meta.headers['content-length'] = gzipped.length;
-      saveResponse(meta.reqOpts, meta.lang, meta, gzipped, () => {});
+      ResponseCache.save(meta.reqOpts, meta.lang, meta, gzipped, () => {});
     }
     console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
     Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);

@@ -5,9 +5,6 @@ import { loadConfig } from './conf.js';
 import Logger from './logger.js';
 import createCache from './cache.js';
 
-const conf = loadConfig('./config/config.json');
-const cache = createCache(conf);
-
 /**
  * opts: options for http request 
  * lang: google cloud translate language code
@@ -44,27 +41,36 @@ const setCache = async (opts, lang, val) => {
   return await cache.setAsync(getKey('PAGE-', opts, lang), val);
 }
 
-export const getSavedResponse = async (opts, lang) => {
-  const headKey = getKey('HEAD-', opts, lang)
-  const pageKey = getKey('PAGE-', opts, lang)
-  Logger.info(opts.id + ' CACHE GET: ' + headKey);
-  Logger.info(opts.id + ' CACHE GET: ' + pageKey);
-  const head = await cache.getAsync(getKey('HEAD-', opts, lang));
-  const body = await cache.getAsync(getKey('PAGE-', opts, lang));
-  if (!head || !body) return null;
-  return {
-    res: JSON.parse(head.toString()),
-    buffer: body
+const createResponseCache = (conf) => {
+  const cache = createCache(conf);
+
+  const ResponseCache = {
+    get: async (opts, lang) => {
+      const headKey = getKey('HEAD-', opts, lang)
+      const pageKey = getKey('PAGE-', opts, lang)
+      Logger.info(opts.id + ' CACHE GET: ' + headKey);
+      Logger.info(opts.id + ' CACHE GET: ' + pageKey);
+      const head = await cache.getAsync(getKey('HEAD-', opts, lang));
+      const body = await cache.getAsync(getKey('PAGE-', opts, lang));
+      if (!head || !body) return null;
+      return {
+        res: JSON.parse(head.toString()),
+        buffer: body
+      };
+    },
+
+    save: async (opts, lang, header, body) => {
+      const headKey = getKey('HEAD-', opts, lang)
+      const pageKey = getKey('PAGE-', opts, lang)
+      Logger.info(opts.id + ' CACHE SAVE: ' + headKey);
+      Logger.info(opts.id + ' CACHE SAVE: ' + pageKey);
+      await cache.setAsync(headKey, JSON.stringify(header));
+      await cache.setAsync(pageKey, body);
+      return true;
+    }
   };
-}
 
-export const saveResponse = async (opts, lang, header, body) => {
-  const headKey = getKey('HEAD-', opts, lang)
-  const pageKey = getKey('PAGE-', opts, lang)
-  Logger.info(opts.id + ' CACHE SAVE: ' + headKey);
-  Logger.info(opts.id + ' CACHE SAVE: ' + pageKey);
-  await cache.setAsync(headKey, JSON.stringify(header));
-  await cache.setAsync(pageKey, body);
-  return true;
-}
+  return ResponseCache;
+};
 
+export default createResponseCache;
