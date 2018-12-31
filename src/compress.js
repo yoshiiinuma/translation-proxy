@@ -1,5 +1,6 @@
 
 import zlib from 'zlib';
+import Logger from './logger.js';
 
 export const uncompress = (text, encoding) => {
   if (encoding === 'gzip') {
