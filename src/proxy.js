@@ -125,8 +125,8 @@ const serve = async (req, res) => {
   let host = req.headers.host;
   let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
 
-  cnt++;
-  let id = cnt.toString().padStart(12, ' ');
+  const idOrig = cnt++;
+  const id = idOrig.toString().padStart(12, ' ');
   const logPreCli = id + ' CLIENT REQUEST ';
   const logPreSer = id + ' SERVER RESPONSE ';
 
