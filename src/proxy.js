@@ -12,7 +12,7 @@ import { loadConfig } from './conf.js';
 import createHtmlPageTranslator from './page-translator.js';
 import createCache from './cache.js';
 import { compress, uncompress } from './compress.js';
-import { saveResponse, getSavedResponse } from './page-cache.js';
+import { saveResponse, getSavedResponse } from './response-cache.js';
 
 const conf = loadConfig('./config/config.json');
 
@@ -58,20 +58,6 @@ const injectAlert = (html) => {
     return html;
   }
 }
-
-const getFullUrl = (opts, lang) => {
-  let url = opts.protocol + '//' + opts.host;
-  if (opts.port) url += ':' + opts.port;
-  url += opts.path;
-  if (lang) {
-    if (url.includes('?')) {
-      url += '&lang=' + lang;
-    } else {
-      url += '?lang=' + lang;
-    }
-  }
-  return url;
-};
 
 var cnt = 0;
 
