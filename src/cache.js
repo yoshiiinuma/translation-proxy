@@ -1,6 +1,5 @@
 
 import redis from 'redis';
-import { promisify } from 'util';
 
 export default (opt) => {
 

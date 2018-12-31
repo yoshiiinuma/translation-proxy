@@ -6,17 +6,17 @@ import https from 'https';
 import url from 'url';
 import requestIp from 'request-ip';
 import cheerio from 'cheerio';
-import crypto from 'crypto';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
 import createHtmlPageTranslator from './page-translator.js';
 import createCache from './cache.js';
 import { compress, uncompress } from './compress.js';
+import { saveResponse, getSavedResponse } from './page-cache.js';
 
 const conf = loadConfig('./config/config.json');
 
-const cache = createCache(conf);
+//const cache = createCache(conf);
 
 const notFound = (res) => {
   Logger.info('404 Not Found');
@@ -72,44 +72,6 @@ const getFullUrl = (opts, lang) => {
   }
   return url;
 };
-
-const getKey = (prefix, opts, lang) => {
-  const reqStr = opts.method + '+' + getFullUrl(opts, lang);
-  let key = prefix + crypto.createHash('md5').update(reqStr).digest('hex');
-  return key;
-};
-
-const getCache = async (opts, lang) => {
-  return await cache.getAsync(getKey('PAGE-', opts, lang));
-}
-
-const setCache = async (opts, lang, val) => {
-  return await cache.setAsync(getKey('PAGE-', opts, lang), val);
-}
-
-const getSavedResponse = async (opts, lang) => {
-  const headKey = getKey('HEAD-', opts, lang)
-  const pageKey = getKey('PAGE-', opts, lang)
-  Logger.info(opts.id + ' CACHE GET: ' + headKey);
-  Logger.info(opts.id + ' CACHE GET: ' + pageKey);
-  const head = await cache.getAsync(getKey('HEAD-', opts, lang));
-  const body = await cache.getAsync(getKey('PAGE-', opts, lang));
-  if (!head || !body) return null;
-  return {
-    res: JSON.parse(head.toString()),
-    buffer: body
-  };
-}
-
-const saveResponse = async (opts, lang, header, body) => {
-  const headKey = getKey('HEAD-', opts, lang)
-  const pageKey = getKey('PAGE-', opts, lang)
-  Logger.info(opts.id + ' CACHE SAVE: ' + headKey);
-  Logger.info(opts.id + ' CACHE SAVE: ' + pageKey);
-  await cache.setAsync(headKey, JSON.stringify(header));
-  await cache.setAsync(pageKey, body);
-  return true;
-}
 
 var cnt = 0;
 
