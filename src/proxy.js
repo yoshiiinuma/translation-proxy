@@ -11,13 +11,11 @@ import crypto from 'crypto';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
-//import getTranslator from './translate.js';
 import createHtmlPageTranslator from './page-translator.js';
 import createCache from './cache.js';
 
 const conf = loadConfig('./config/config.json');
 
-//const translate = getTranslator(conf);
 const cache = createCache(conf);
 
 const notFound = (res) => {
@@ -382,10 +380,6 @@ const sendTranslation = (res, buffer, meta, logPrefix) => {
 };
 
 const translatePage = (doc, lang, callback) => {
-  //Logger.debug('---------------------------------------------------------------------------');
-  //Logger.debug(doc);
-
-  //translate(doc, lang, (err, translatedHtml) => {
   const page = createHtmlPageTranslator(doc, conf);
   page.translateAll(conf.translationSelectors, lang, conf.maxTextPerRequest, conf.domBreakdownThreshold, (err, translatedHtml) => {
     if (err) {
