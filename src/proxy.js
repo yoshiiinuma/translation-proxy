@@ -125,38 +125,27 @@ const serve = async (req, res) => {
     opts.agent = false;
   }
 
-  let done = false;
   let proxyReq = null;
 
   if (lang) {
     const translated = await ResponseCache.get(opts, lang);
     if (translated) {
-      done = true;
       const savedRes = translated.res
-      console.log(logPreSer + 'END: RETURNING CACHED TRANSLATED: ' + translated.buffer.length + ' == ' + savedRes.headers['content-length']);
-      Logger.info(logPreSer + 'END: RETURNING CACHED TRANSLATED: ' + translated.buffer.length + ' == ' + savedRes.headers['content-length']);
-      res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
-      res.end(translated.buffer);
+      sendBuffer(res, translated.buffer, savedRes, logPreSer + 'END: RETURNING CACHED TRANSLATED');
       return;
     }
   }
 
   const original = await ResponseCache.get(opts);
   if (original) {
-    done = true;
     const savedRes = original.res
     if (!lang) {
-      console.log(logPreSer + 'END: RETURNING CACHED ORIGINAL: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
-      Logger.info(logPreSer + 'END: RETURNING CACHED ORIGINAL: ' + original.buffer.length + ' == ' + savedRes.headers['content-length']);
-      res.writeHead(savedRes.statusCode, savedRes.statusMessage, savedRes.headers)
-      res.end(original.buffer);
+      sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
       return;
     }
     savedRes.lang = lang;
     sendTranslation(res, original.buffer, savedRes, logPreSer);
-  }
-
-  if (!done) {
+  } else {
     Logger.info(logPreSer + '!!! Start Proxy Request !!!');
     proxyReq = startProxyRequest(res, proxy, opts, lang);
   }
@@ -168,7 +157,7 @@ const serve = async (req, res) => {
 
   req.on('end', () => {
     Logger.info(logPreCli + 'END');
-    Logger.debug('#####################################################################');
+    Logger.debug('####################################################################');
     if (proxyReq) proxyReq.end();
   });
 
@@ -263,9 +252,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
       if (lang) {
         sendTranslation(res, buffer, savedRes, logPrefix);
       } else {
-        console.log(logPrefix + 'BUFFERED PAGE: ' + buffer.length + ' == ' + savedRes.headers['content-length']);
-        res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, savedRes.headers)
-        res.end(buffer);
+        sendBuffer(res, buffer, savedRes, logPrefix + 'BUFFERED PAGE');
       }
 
       Logger.info(logPrefix + 'END WITH PROCESSING');
@@ -282,6 +269,13 @@ const startProxyRequest = (res, proxy, opts, lang) => {
 
   return proxyReq;
 };
+
+const sendBuffer = (res, buffer, meta, logMsg) => {
+  console.log(logMsg + ': ' + buffer.length + ' == ' + meta.headers['content-length']);
+  Logger.debug(logMsg + ': ' + buffer.length + ' == ' + meta.headers['content-length']);
+  res.writeHead(meta.statusCode, meta.statusMessage, meta.headers)
+  res.end(buffer);
+}
 
 const sendTranslation = (res, buffer, meta, logPrefix) => {
   const doc = uncompress(buffer, meta.encoding);
