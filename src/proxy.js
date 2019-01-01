@@ -61,6 +61,64 @@ const injectAlert = (html) => {
 
 var cnt = 0;
 
+const convertRequest = (req) => {
+  const reqUrl = url.parse(req.url, true);
+  const scheme = (req.connection.encrypted) ? 'https' : 'http';
+  let path = reqUrl.pathname;
+  let params = [];
+  let host = req.headers.host;
+  let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
+  let lang = null;
+
+  for(let key in reqUrl.query) {
+    if (key === 'lang') {
+      lang = reqUrl.query[key];
+    } else {
+      params.push(key + '=' + reqUrl.query[key]);
+    }
+  }
+  if (params.length > 0) path += '?' + params.join('&');
+  return {
+  }
+}
+
+const genReqOpts = (req) => {
+  const reqUrl = url.parse(req.url, true);
+  const scheme = (req.connection.encrypted) ? 'https' : 'http';
+  let path = reqUrl.pathname;
+  let params = [];
+  let host = req.headers.host;
+  let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
+  let lang = null;
+
+  for(let key in reqUrl.query) {
+    if (key === 'lang') {
+      lang = reqUrl.query[key];
+    } else {
+      params.push(key + '=' + reqUrl.query[key]);
+    }
+  }
+  if (params.length > 0) path += '?' + params.join('&');
+
+  let opts = {
+    protocol: scheme + ':',
+    method: req.method,
+    host: host,
+    port: port,
+    path,
+    headers,
+    id
+  };
+
+  if (scheme === 'https') {
+    opts.rejectUnauthorized = false;
+    opts.requestCert = true;
+    opts.agent = false;
+  }
+
+  return opts;
+};
+
 const serve = async (req, res) => {
   const reqUrl = url.parse(req.url, true);
   const agent = (req.connection.encrypted) ? https : http;
