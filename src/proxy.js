@@ -204,13 +204,14 @@ const startProxyRequest = (res, proxy, opts, lang) => {
     const encoding = proxyRes.headers['content-encoding'];
     const isHtml = /text\/html/.test(proxyRes.headers['content-type']);
     const logPrefix = opts.id + ' ' + 'PROXY RESPONSE ';
+    const needTranslation = isHtml && lang;
 
     let body = [];
 
     logProxyResponse(proxyRes, opts);
 
     let headers = Object.assign({}, proxyRes.headers);
-    if (isHtml || lang) {
+    if (needTranslation) {
       headers['access-control-allow-origin'] = opts.host;
       //headers['transfer-encoding'] = 'identity';
       delete headers['transfer-encoding'];
@@ -224,7 +225,7 @@ const startProxyRequest = (res, proxy, opts, lang) => {
       encoding,
       headers
     };
-    if (!(isHtml || lang)) {
+    if (!(needTranslation)) {
       res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
     }
     //proxyRes.setEncoding('utf8');
@@ -237,26 +238,22 @@ const startProxyRequest = (res, proxy, opts, lang) => {
     proxyRes.on('data', (chunk) => {
       Logger.info(logPrefix + 'DATA');
       body.push(chunk);
-      if (!(isHtml || lang)) res.write(chunk);
+      if (!needTranslation) res.write(chunk);
     });
 
     proxyRes.on('end', () => {
-      if (!(isHtml || lang) || body.length === 0) {
+      if (!needTranslation) {
         Logger.info(logPrefix + 'END WITHOUT PROCESSING');
         res.end();
-        return;
+        Logger.debug('===========================================================================');
       }
       const buffer = Buffer.concat(body);
       savedRes.headers['content-length'] = buffer.length;
       ResponseCache.save(opts, null, savedRes, buffer, () => {});
-      if (lang) {
+      if (needTranslation) {
         sendTranslation(res, buffer, savedRes, logPrefix);
-      } else {
-        sendBuffer(res, buffer, savedRes, logPrefix + 'BUFFERED PAGE');
+        Logger.debug('===========================================================================');
       }
-
-      Logger.info(logPrefix + 'END WITH PROCESSING');
-      Logger.debug('===========================================================================');
     });
 
   });
