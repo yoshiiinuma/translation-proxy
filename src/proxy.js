@@ -63,7 +63,7 @@ var cnt = 0;
 
 const serve = async (req, res) => {
   const reqUrl = url.parse(req.url, true);
-  const proxy = (req.connection.encrypted) ? https : http;
+  const agent = (req.connection.encrypted) ? https : http;
   const scheme = (req.connection.encrypted) ? 'https' : 'http';
   const remoteIp = requestIp.getClientIp(req);
   const forwardedFor = req.headers['x-forwarded-for'] || req.headers['forwarded'] || remoteIp;
@@ -147,7 +147,7 @@ const serve = async (req, res) => {
     sendTranslation(res, original.buffer, savedRes, logPreSer);
   } else {
     Logger.info(logPreSer + '!!! Start Proxy Request !!!');
-    proxyReq = startProxyRequest(res, proxy, opts, lang);
+    proxyReq = startProxyRequest(res, agent, opts, lang);
   }
 
   req.on('data', (chunk) => {
@@ -197,10 +197,10 @@ const logProxyResponse = (res, opts) => {
   Logger.debug(res.headers);
 };
 
-const startProxyRequest = (res, proxy, opts, lang) => {
+const startProxyRequest = (res, agent, opts, lang) => {
   logProxyRequest(opts);
 
-  const proxyReq = proxy.request(opts, (proxyRes) => {
+  const proxyReq = agent.request(opts, (proxyRes) => {
     const encoding = proxyRes.headers['content-encoding'];
     const isHtml = /text\/html/.test(proxyRes.headers['content-type']);
     const logPrefix = opts.id + ' ' + 'PROXY RESPONSE ';
