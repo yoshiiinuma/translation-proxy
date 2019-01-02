@@ -61,7 +61,7 @@ const injectAlert = (html) => {
 
 const rgxHost = /^(.+):(\d+)$/;
 
-const convertRequest = (req, id) => {
+const reqToReqObj = (req, id) => {
   const reqUrl = URL.parse(req.url, true);
   const scheme = (req.connection.encrypted) ? 'https' : 'http';
   const method = req.method;
@@ -130,8 +130,7 @@ const serve = async (req, res) => {
   const logPreSer = id + ' SERVER RESPONSE ';
   const agent = (req.connection.encrypted) ? https : http;
 
-  const obj = convertRequest(req, id);
-  //const reqOpts = genReqOpts(obj);
+  const obj = reqToReqObj(req, id);
 
   Logger.debug('#####################################################################');
   console.log(logPreCli + 'START: ' + obj.href);
@@ -145,6 +144,28 @@ const serve = async (req, res) => {
   }
 
   let proxyReq = null;
+
+  req.on('data', (chunk) => {
+    Logger.info(logPreCli + 'DATA');
+    if (proxyReq) proxyReq.write(chunk);
+  });
+
+  req.on('end', () => {
+    Logger.info(logPreCli + 'END');
+    Logger.debug('####################################################################');
+    if (proxyReq) proxyReq.end();
+  });
+
+  req.on('error', (e) => {
+    Logger.error(logPreCli + 'ERROR');
+    Logger.debug('####################################################################');
+    serverError(e, res);
+  });
+
+  res.on('error', (e) => {
+    Logger.error(logPreSer + 'ERROR');
+    serverError(e, res);
+  });
 
   if (obj.lang) {
     const translated = await ResponseCache.get(obj, obj.lang);
@@ -168,28 +189,6 @@ const serve = async (req, res) => {
     Logger.info(logPreSer + '!!! Start Proxy Request !!!');
     proxyReq = startProxyRequest(res, agent, obj);
   }
-
-  req.on('data', (chunk) => {
-    Logger.info(logPreCli + 'DATA');
-    if (proxyReq) proxyReq.write(chunk);
-  });
-
-  req.on('end', () => {
-    Logger.info(logPreCli + 'END');
-    Logger.debug('####################################################################');
-    if (proxyReq) proxyReq.end();
-  });
-
-  req.on('error', (e) => {
-    Logger.error(logPreCli + 'ERROR');
-    Logger.debug('####################################################################');
-    serverError(e, res);
-  });
-
-  res.on('error', (e) => {
-    Logger.error(logPreSer + 'ERROR');
-    serverError(e, res);
-  });
 };
 
 const logProxyRequest = (opts) => {
