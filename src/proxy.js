@@ -97,8 +97,8 @@ const convertRequest = (req, id) => {
   return {
     id,
     href: scheme + '://' + host + reqUrl.path,
-    scheme,
     lang,
+    scheme,
     protocal: scheme + ':',
     method,
     host,
@@ -110,7 +110,7 @@ const convertRequest = (req, id) => {
 }
 
 const genReqOpts = (reqObj) => {
-  const { url, url2, lang, scheme, rawHeaders, ...opts } = reqObj;
+  const {id,  href, lang, scheme, rawHeaders, ...opts } = reqObj;
 
   if (reqObj.scheme === 'https') {
     opts.rejectUnauthorized = false;
