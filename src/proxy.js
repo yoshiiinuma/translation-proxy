@@ -99,7 +99,7 @@ const reqToReqObj = (req, id) => {
     href: scheme + '://' + host + reqUrl.path,
     lang,
     scheme,
-    protocal: scheme + ':',
+    protocol: scheme + ':',
     method,
     host,
     port,
@@ -131,6 +131,7 @@ const serve = async (req, res) => {
   const agent = (req.connection.encrypted) ? https : http;
 
   const obj = reqToReqObj(req, id);
+  //const reqOpts = genReqOpts(obj);
 
   Logger.debug('#####################################################################');
   console.log(logPreCli + 'START: ' + obj.href);
@@ -144,6 +145,29 @@ const serve = async (req, res) => {
   }
 
   let proxyReq = null;
+
+  if (obj.lang) {
+    const translated = await ResponseCache.get(obj, obj.lang, id);
+    if (translated) {
+      const savedRes = translated.res
+      sendBuffer(res, translated.buffer, savedRes, logPreSer + 'END: RETURNING CACHED TRANSLATED');
+      return;
+    }
+  }
+
+  const original = await ResponseCache.get(obj, null, id);
+  if (original) {
+    const savedRes = original.res
+    if (obj.lang) {
+      savedRes.lang = obj.lang;
+      sendTranslation(res, original.buffer, savedRes, obj.id, logPreSer);
+    } else {
+      sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
+    }
+  } else {
+    Logger.info(logPreSer + '!!! Start Proxy Request !!!');
+    proxyReq = startProxyRequest(res, agent, obj);
+  }
 
   req.on('data', (chunk) => {
     Logger.info(logPreCli + 'DATA');
@@ -166,29 +190,6 @@ const serve = async (req, res) => {
     Logger.error(logPreSer + 'ERROR');
     serverError(e, res);
   });
-
-  if (obj.lang) {
-    const translated = await ResponseCache.get(obj, obj.lang);
-    if (translated) {
-      const savedRes = translated.res
-      sendBuffer(res, translated.buffer, savedRes, logPreSer + 'END: RETURNING CACHED TRANSLATED');
-      return;
-    }
-  }
-
-  const original = await ResponseCache.get(obj);
-  if (original) {
-    const savedRes = original.res
-    if (obj.lang) {
-      savedRes.lang = obj.lang;
-      sendTranslation(res, original.buffer, savedRes, logPreSer);
-    } else {
-      sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
-    }
-  } else {
-    Logger.info(logPreSer + '!!! Start Proxy Request !!!');
-    proxyReq = startProxyRequest(res, agent, obj);
-  }
 };
 
 const logProxyRequest = (opts) => {
@@ -267,9 +268,9 @@ const startProxyRequest = (res, agent, reqObj) => {
       }
       const buffer = Buffer.concat(body);
       savedRes.headers['content-length'] = buffer.length;
-      ResponseCache.save(reqObj, null, savedRes, buffer, () => {});
+      ResponseCache.save(reqObj, null, savedRes, buffer, reqObj.id);
       if (needTranslation) {
-        sendTranslation(res, buffer, savedRes, logPrefix);
+        sendTranslation(res, buffer, savedRes, reqObj.id, logPrefix);
         Logger.debug('===========================================================================');
       }
     });
@@ -292,7 +293,7 @@ const sendBuffer = (res, buffer, meta, logMsg) => {
   res.end(buffer);
 }
 
-const sendTranslation = (res, buffer, meta, logPrefix) => {
+const sendTranslation = (res, buffer, meta, id, logPrefix) => {
   const doc = uncompress(buffer, meta.encoding);
   let gzipped;
   let pageType = 'TRANSLATED PAGE';
@@ -307,7 +308,7 @@ const sendTranslation = (res, buffer, meta, logPrefix) => {
     } else {
       gzipped = compress(translatedHtml, meta.encoding);
       meta.headers['content-length'] = gzipped.length;
-      ResponseCache.save(meta.reqOpts, meta.lang, meta, gzipped, () => {});
+      ResponseCache.save(meta.reqOpts, meta.lang, meta, gzipped, id);
     }
     console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
     Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);

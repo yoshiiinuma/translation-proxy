@@ -45,11 +45,12 @@ const createResponseCache = (conf) => {
   const cache = createCache(conf);
 
   const ResponseCache = {
-    get: async (opts, lang) => {
+    get: async (opts, lang, id) => {
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.info(opts.id + ' CACHE GET: ' + headKey);
-      Logger.info(opts.id + ' CACHE GET: ' + pageKey);
+      Logger.debug(id + ' CACHE GET: ' + opts.href);
+      Logger.debug(id + ' CACHE GET: ' + headKey);
+      Logger.debug(id + ' CACHE GET: ' + pageKey);
       const head = await cache.getAsync(getKey('HEAD-', opts, lang));
       const body = await cache.getAsync(getKey('PAGE-', opts, lang));
       if (!head || !body) return null;
@@ -59,11 +60,16 @@ const createResponseCache = (conf) => {
       };
     },
 
-    save: async (opts, lang, header, body) => {
+    save: async (opts, lang, header, body, id) => {
+      if (!(opts.method === 'GET' || opts.method === 'HEAD')) return false;
+      const hrefKey = getKey('HREF-', opts, lang)
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.info(opts.id + ' CACHE SAVE: ' + headKey);
-      Logger.info(opts.id + ' CACHE SAVE: ' + pageKey);
+      Logger.debug(id + ' CACHE SAVE: ' + opts.method + ' ' + opts.href);
+      Logger.debug(id + ' CACHE SAVE: ' + hrefKey);
+      Logger.debug(id + ' CACHE SAVE: ' + headKey);
+      Logger.debug(id + ' CACHE SAVE: ' + pageKey);
+      await cache.setAsync(hrefKey, opts.href);
       await cache.setAsync(headKey, JSON.stringify(header));
       await cache.setAsync(pageKey, body);
       return true;

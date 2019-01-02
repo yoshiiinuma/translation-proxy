@@ -1,4 +1,6 @@
 {
+  "cacheEnabled": true,
+  "cacheSkip": ["do-not-cache-if-url-contains"],
   "proxiedHosts": ["your.domain.com"],
   "translationSelectors": ["#header", "#main", "#footer"],
   "maxTextPerRequest": 12000,
