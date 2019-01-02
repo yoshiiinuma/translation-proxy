@@ -149,7 +149,6 @@ const serve = async (req, res) => {
   let proxyReq = null;
 
   if (obj.lang) {
-    //const translated = await ResponseCache.get(reqOpts, obj.lang);
     const translated = await ResponseCache.get(obj, obj.lang);
     if (translated) {
       const savedRes = translated.res
@@ -169,7 +168,6 @@ const serve = async (req, res) => {
     }
   } else {
     Logger.info(logPreSer + '!!! Start Proxy Request !!!');
-    //proxyReq = startProxyRequest(res, agent, reqOpts, obj.lang);
     proxyReq = startProxyRequest(res, agent, obj);
   }
 
@@ -196,118 +194,6 @@ const serve = async (req, res) => {
   });
 };
 
-//const serveOld = async (req, res) => {
-//  const reqUrl = url.parse(req.url, true);
-//  const agent = (req.connection.encrypted) ? https : http;
-//  const scheme = (req.connection.encrypted) ? 'https' : 'http';
-//  const remoteIp = requestIp.getClientIp(req);
-//  const forwardedFor = req.headers['x-forwarded-for'] || req.headers['forwarded'] || remoteIp;
-//  let lang = null;
-//  let host = req.headers.host;
-//  let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
-//
-//  const idOrig = cnt++;
-//  const id = idOrig.toString().padStart(12, ' ');
-//  const logPreCli = id + ' CLIENT REQUEST ';
-//  const logPreSer = id + ' SERVER RESPONSE ';
-//
-//  const rgxHost = /^(.+):(\d+)$/;
-//  const matched = rgxHost.exec(host);
-//  if (matched) {
-//    host = matched[1];
-//    //port = parseInt(matched[2]);
-//  }
-//
-//  Logger.debug('#####################################################################');
-//  console.log(logPreCli + 'START: ' + scheme + '://' + host + reqUrl.path);
-//  Logger.info(logPreCli + 'START: ' + scheme + '://' + host + reqUrl.path);
-//  Logger.debug(req.rawHeaders);
-//
-//  if (!conf.proxiedHosts[host]) {
-//    Logger.debug(logPreCli + 'NOT PROXIED: ' + scheme + '://' + host + reqUrl.path);
-//    clientError(null, res);
-//    return;
-//  }
-//  let path = reqUrl.pathname;
-//
-//  let params = [];
-//  for(let key in reqUrl.query) {
-//    if (key === 'lang') {
-//      lang = reqUrl.query[key];
-//    } else {
-//      params.push(key + '=' + reqUrl.query[key]);
-//    }
-//  }
-//  if (params.length > 0) path += '?' + params.join('&');
-//
-//  let headers = Object.assign({}, req.headers);
-//  headers['X-Forwarded-For'] = forwardedFor;
-//  headers['X-Forwarded-Proto'] = scheme;
-//  headers['X-Real-IP'] = remoteIp;
-//
-//  let opts = {
-//    protocol: scheme + ':',
-//    method: req.method,
-//    host: host,
-//    port: port,
-//    path,
-//    headers,
-//    id
-//  };
-//  if (scheme === 'https') {
-//    opts.rejectUnauthorized = false;
-//    opts.requestCert = true;
-//    opts.agent = false;
-//  }
-//
-//  let proxyReq = null;
-//
-//  if (lang) {
-//    const translated = await ResponseCache.get(opts, lang);
-//    if (translated) {
-//      const savedRes = translated.res
-//      sendBuffer(res, translated.buffer, savedRes, logPreSer + 'END: RETURNING CACHED TRANSLATED');
-//      return;
-//    }
-//  }
-//
-//  const original = await ResponseCache.get(opts);
-//  if (original) {
-//    const savedRes = original.res
-//    if (!lang) {
-//      sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
-//      return;
-//    }
-//    savedRes.lang = lang;
-//    sendTranslation(res, original.buffer, savedRes, logPreSer);
-//  } else {
-//    Logger.info(logPreSer + '!!! Start Proxy Request !!!');
-//    proxyReq = startProxyRequest(res, agent, opts, lang);
-//  }
-//
-//  req.on('data', (chunk) => {
-//    Logger.info(logPreCli + 'DATA');
-//    if (proxyReq) proxyReq.write(chunk);
-//  });
-//
-//  req.on('end', () => {
-//    Logger.info(logPreCli + 'END');
-//    Logger.debug('####################################################################');
-//    if (proxyReq) proxyReq.end();
-//  });
-//
-//  req.on('error', (e) => {
-//    Logger.error(logPreCli + 'ERROR');
-//    Logger.debug('####################################################################');
-//    serverError(e, res);
-//  });
-//
-//  res.on('error', (e) => {
-//    Logger.error(logPreSer + 'ERROR');
-//    serverError(e, res);
-//  });
-//};
-
 const logProxyRequest = (opts) => {
   let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
   if (opts.port) uri += ':' + opts.port;
@@ -331,7 +217,6 @@ const logProxyResponse = (res, opts) => {
   Logger.debug(res.headers);
 };
 
-//const startProxyRequest = (res, agent, reqOpts, lang) => {
 const startProxyRequest = (res, agent, reqObj) => {
   const reqOpts = genReqOpts(reqObj);
   logProxyRequest(reqObj);
@@ -385,7 +270,6 @@ const startProxyRequest = (res, agent, reqObj) => {
       }
       const buffer = Buffer.concat(body);
       savedRes.headers['content-length'] = buffer.length;
-      //ResponseCache.save(reqOpts, null, savedRes, buffer, () => {});
       ResponseCache.save(reqObj, null, savedRes, buffer, () => {});
       if (needTranslation) {
         sendTranslation(res, buffer, savedRes, logPrefix);
