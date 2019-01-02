@@ -1,4 +1,5 @@
 {
+  "proxiedHosts": ["your.domain.com"],
   "translationSelectors": ["#header", "#main", "#footer"],
   "maxTextPerRequest": 12000,
   "domBreakdownThreshold": 250,
