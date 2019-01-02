@@ -46,6 +46,7 @@ const createResponseCache = (conf) => {
 
   const ResponseCache = {
     get: async (opts, lang, id) => {
+      if (!conf.cacheEnabled) return null;
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
       Logger.debug(id + ' CACHE GET: ' + opts.href);
@@ -61,6 +62,7 @@ const createResponseCache = (conf) => {
     },
 
     save: async (opts, lang, header, body, id) => {
+      if (!conf.cacheEnabled) return false;
       if (!(opts.method === 'GET' || opts.method === 'HEAD')) return false;
       const hrefKey = getKey('HREF-', opts, lang)
       const headKey = getKey('HEAD-', opts, lang)
