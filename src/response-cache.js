@@ -64,6 +64,11 @@ const createResponseCache = (conf) => {
     save: async (opts, lang, header, body, id) => {
       if (!conf.cacheEnabled) return false;
       if (!(opts.method === 'GET' || opts.method === 'HEAD')) return false;
+      if (conf.cacheSkip) {
+        if (conf.cacheSkip.some((keyword) => { return opts.href.includes(keyword) })) {
+          return false;
+        }
+      }
       const hrefKey = getKey('HREF-', opts, lang)
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
