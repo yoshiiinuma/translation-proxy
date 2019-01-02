@@ -96,8 +96,7 @@ const convertRequest = (req, id) => {
 
   return {
     id,
-    href: reqUrl.href,
-    href2: scheme + '://' + host + reqUrl.path,
+    href: scheme + '://' + host + reqUrl.path,
     scheme,
     lang,
     protocal: scheme + ':',
@@ -136,7 +135,6 @@ const serve = async (req, res) => {
 
   Logger.debug('#####################################################################');
   console.log(logPreCli + 'START: ' + obj.href);
-  console.log(logPreCli + 'START: ' + obj.href2);
   Logger.info(logPreCli + 'START: ' + obj.href);
   Logger.debug(obj.rawHeaders);
 
