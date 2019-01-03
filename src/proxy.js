@@ -158,7 +158,6 @@ const serve = async (req, res) => {
   if (original) {
     const savedRes = original.res
     if (obj.lang) {
-      //savedRes.id = obj.id;
       savedRes.lang = obj.lang;
       savedRes.href = obj.href;
       sendTranslation(res, original.buffer, obj, savedRes, logPreSer);
@@ -207,8 +206,11 @@ const logProxyResponse = (res, opts) => {
   const type = res.headers['content-type'] || '';
   const transfer = res.headers['transfer-encoding'] || '';
   const len = res.headers['content-length'] || '';
-  const msg = opts.href + ' ' + res.statusCode + ' ' + res.statusMessage + ' LEN: ' + len + ' CONTENT-TYPE: ' +
-    type + ' CONTENT-ENCODING: ' + encoding + ' TRANSFER-ENCODING: ' + transfer;
+  let msg = opts.href + ' ' + res.statusCode + ' ' + res.statusMessage + ' LEN: ' + len;
+  if (type) msg += ' CONTENT TYPE: "' + type + '"';
+  if (encoding) msg += ' ENCODING: "' + encoding + '"';
+  if (transfer) msg += ' TRANSFER: "' + transfer + '"';
+
   console.log(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
 
   Logger.debug(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
@@ -223,8 +225,8 @@ const startProxyRequest = (res, agent, reqObj) => {
   const proxyReq = agent.request(reqOpts, (proxyRes) => {
     const encoding = proxyRes.headers['content-encoding'];
     const isHtml = /text\/html/.test(proxyRes.headers['content-type']);
-    const logPrefix = reqObj.id + ' ' + 'PROXY RESPONSE ';
     const needTranslation = isHtml && reqObj.lang;
+    const logPrefix = reqObj.id + ' ' + 'PROXY RESPONSE ';
 
     let body = [];
 
