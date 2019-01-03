@@ -10,7 +10,7 @@ Logger.Type = {
   INFO: 2,
   WARN: 3,
   ERROR: 4,
-  FATAL: 5 
+  FATAL: 5
 }
 
 const Label = {
@@ -18,16 +18,18 @@ const Label = {
   INFO:  'INFO ',
   WARN:  'WARN ',
   ERROR: 'ERROR',
-  FATAL: 'FATAL' 
+  FATAL: 'FATAL'
 };
 
 const DEFAULT_LOG_LEVEL = Logger.Type.ERROR;
 const DEFAULT_LOG_DIR = './logs';
-const DEFAULT_LOG_FILE = 'default.log';
+const DEFAULT_APP_LOG_FILE = 'application.log';
+const DEFAULT_ACCESS_LOG_FILE = 'access.log';
 
 let logEnabled = false;
 let logLevel = DEFAULT_LOG_LEVEL;
-let logFile = DEFAULT_LOG_DIR + '/' + DEFAULT_LOG_FILE; 
+let logFile = DEFAULT_LOG_DIR + '/' + DEFAULT_APP_LOG_FILE;
+let accessLogFile = DEFAULT_LOG_DIR + '/' + DEFAULT_ACCESS_LOG_FILE;
 
 const logFormat = (label, msg) => {
   let time = dateFormat(new Date(), 'yyyy-mm-dd HH:MM:ss.l');
@@ -47,7 +49,7 @@ const appendToFile = (label, msg) => {
 
 let append = writeToStdout;
 
-const switchToStdout = () => { 
+const switchToStdout = () => {
   append = writeToStdout;
 }
 
@@ -65,7 +67,7 @@ Logger.disable = () => {
   switchToStdout();
 }
 
-Logger.setLogFile = (filePath) => { 
+Logger.setLogFile = (filePath) => {
   logFile = filePath;
 }
 
@@ -145,27 +147,36 @@ Logger.initialize = (arg) => {
 
 Logger.debug = (msg) => {
   if (logLevel > Logger.Type.DEBUG) return;
-  append(Label.DEBUG, msg); 
+  append(Label.DEBUG, msg);
 }
 
 Logger.info = (msg) => {
   if (logLevel > Logger.Type.INFO) return;
-  append(Label.INFO, msg); 
+  append(Label.INFO, msg);
 }
 
 Logger.warn = (msg) => {
   if (logLevel < Logger.Type.WARN) return;
-  append(Label.WARN, msg); 
+  append(Label.WARN, msg);
 }
 
 Logger.error = (msg) => {
   if (logLevel > Logger.Type.ERROR) return;
-  append(Label.ERROR, msg); 
+  append(Label.ERROR, msg);
 }
 
 Logger.fatal = (msg) => {
   if (logLevel > Logger.Type.FATAL) return;
-  append(Label.FATAL, msg); 
+  append(Label.FATAL, msg);
 }
+
+Logger.access = (reqObj) => {
+  const time = dateFormat(new Date(), 'yyyy-mm-dd HH:MM:ss.l');
+  let msg = time + ' ' + reqObj.remoteIp.padEnd(16, ' ') + reqObj.method.padEnd(7, ' ') +
+    reqObj.href + "\n";
+  fs.appendFile(accessLogFile, msg, (err) => {
+    if (err) throw err;
+  });
+};
 
 export default Logger;

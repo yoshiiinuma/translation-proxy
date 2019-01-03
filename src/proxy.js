@@ -97,6 +97,7 @@ const reqToReqObj = (req, id) => {
   return {
     id,
     href: scheme + '://' + host + reqUrl.path,
+    remoteIp,
     lang,
     scheme,
     protocol: scheme + ':',
@@ -110,7 +111,7 @@ const reqToReqObj = (req, id) => {
 }
 
 const genReqOpts = (reqObj) => {
-  const {id,  href, lang, scheme, rawHeaders, ...opts } = reqObj;
+  const {id,  href, remoteIp, lang, scheme, rawHeaders, ...opts } = reqObj;
 
   if (reqObj.scheme === 'https') {
     opts.rejectUnauthorized = false;
@@ -131,6 +132,7 @@ const serve = async (req, res) => {
   const agent = (req.connection.encrypted) ? https : http;
 
   const obj = reqToReqObj(req, id);
+  Logger.access(obj);
 
   Logger.debug('#####################################################################');
   console.log(logPreCli + 'START: ' + obj.href);
