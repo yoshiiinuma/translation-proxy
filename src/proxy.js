@@ -318,6 +318,9 @@ const sendTranslation = async (res, buffer, reqObj, proxyResObj, logPrefix) => {
     } else {
       gzipped = await compressAsync(translatedHtml, proxyResObj.encoding);
       proxyResObj.headers['content-length'] = gzipped.length;
+      const cookies = proxyResObj.headers['set-cookie'] || [];
+      cookies.push('SELECTEDLANG=' + proxyResObj.lang);
+      proxyResObj.headers['set-cookie'] = cookies;
       ResponseCache.save(reqObj, proxyResObj.lang, proxyResObj, gzipped);
     }
     //console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
