@@ -20,7 +20,7 @@ export default (html, conf) => {
     const all = sortOutBySize(selectors, limit, threshold);
     logSorted(all);
 
-    Logger.info('TRANSLATEALL BLOCK SIZE: ' + all.length + ' Lang: ' + lang);
+    Logger.info('TRANSLATE ALL BLOCK SIZE: ' + all.length + ' Lang: ' + lang);
     createConnectionOption(conf)
       .then((apiOpts) => {
         return Promise.all(all.map((components, i) => {
@@ -31,19 +31,19 @@ export default (html, conf) => {
         //}, Promise.resolve());
       })
       .then(() => {
-        Logger.info('TRANSLATEALL: Done!!!');
+        Logger.info('TRANSLATE ALL: Done!!!');
         callback(null, $.html());
       })
       .catch((err) => callback(err));
   };
 
   const translatePortion = (components, lang, apiOpts, i) => {
-    Logger.info('TRANSLATEPORTION: START #' + i + ' : LEN ' + components.length);
+    Logger.info('TRANSLATE PORTION: START #' + i + ' : LEN ' + components.length);
     const data = createPostData(components, lang);
 
     return callTranslateApi(apiOpts, data)
       .then((translated) => {
-        Logger.info('TRANSLATEPORTION: END ' + i);
+        Logger.info('TRANSLATE PORTION: END #' + i);
         replaceTexts(components, translated);
       });
   };

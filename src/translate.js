@@ -105,7 +105,7 @@ export const createPostData = (html, lang, conf) => {
  */
 export const callTranslateApi = (opts, data) => {
   return new Promise((resolve, reject) => {
-    Logger.info('CALL API');
+    Logger.info('TRANSLATE CALL API');
     const req = https.request(opts, (res) => {
       let body = '';
 

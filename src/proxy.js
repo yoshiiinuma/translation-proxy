@@ -14,6 +14,22 @@ import createCache from './cache.js';
 import { compress, uncompress, compressAsync, uncompressAsync } from './compress.js';
 import createResponseCache from './response-cache.js';
 
+const setUncaughtExceptionHandler = () => {
+  process.on('uncaughtException', (err) => {
+    Logger.fatal('########################################################################');
+    Logger.fatal('Uncaught Exception');
+    Logger.fatal(err);
+    Logger.fatal('########################################################################');
+  });
+  process.on('unhandledRejection', (reason, p) => {
+    Logger.fatal('########################################################################');
+    Logger.fatal('Unhandled Rejection');
+    Logger.fatal(reason);
+    Logger.fatal(p);
+    Logger.fatal('########################################################################');
+  });
+};
+
 const conf = loadConfig('./config/config.json');
 
 const ResponseCache = createResponseCache(conf);
@@ -134,8 +150,7 @@ const serve = async (req, res) => {
   const obj = reqToReqObj(req, id);
   Logger.access(obj);
 
-  Logger.debug('#####################################################################');
-  console.log(logPreCli + 'START: ' + obj.href);
+  //console.log(logPreCli + 'START: ' + obj.href);
   Logger.info(logPreCli + 'START: ' + obj.href);
   Logger.debug(obj.rawHeaders);
 
@@ -167,24 +182,21 @@ const serve = async (req, res) => {
       sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
     }
   } else {
-    Logger.info(logPreSer + '!!! Start Proxy Request !!!');
     proxyReq = startProxyRequest(res, agent, obj);
   }
 
   req.on('data', (chunk) => {
-    Logger.info(logPreCli + 'DATA');
+    Logger.debug(logPreCli + 'DATA');
     if (proxyReq) proxyReq.write(chunk);
   });
 
   req.on('end', () => {
     Logger.info(logPreCli + 'END');
-    Logger.debug('####################################################################');
     if (proxyReq) proxyReq.end();
   });
 
   req.on('error', (e) => {
     Logger.error(logPreCli + 'ERROR');
-    Logger.debug('####################################################################');
     serverError(e, res);
   });
 
@@ -198,25 +210,23 @@ const logProxyRequest = (opts) => {
   let uri = opts.method + ' ' + opts.protocol + '://' + opts.host;
   if (opts.port) uri += ':' + opts.port;
   uri += opts.path;
-  Logger.debug('===========================================================================');
   Logger.info(opts.id + ' PROXY REQUEST SEND: ' + uri);
   Logger.debug(opts);
 };
 
 const logProxyResponse = (res, opts) => {
-  const encoding = res.headers['content-encoding'] || '';
-  const type = res.headers['content-type'] || '';
-  const transfer = res.headers['transfer-encoding'] || '';
+  const encoding = res.headers['content-encoding'];
+  const type = res.headers['content-type'];
+  const transfer = res.headers['transfer-encoding'];
   const len = res.headers['content-length'] || '';
+
   let msg = opts.href + ' ' + res.statusCode + ' ' + res.statusMessage + ' LEN: ' + len;
   if (type) msg += ' CONTENT TYPE: "' + type + '"';
   if (encoding) msg += ' ENCODING: "' + encoding + '"';
   if (transfer) msg += ' TRANSFER: "' + transfer + '"';
 
-  console.log(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
-
-  Logger.debug(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
-  Logger.debug('---------------------------------------------------------------------------');
+  //console.log(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
+  Logger.info(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
   Logger.debug(res.headers);
 };
 
@@ -258,7 +268,7 @@ const startProxyRequest = (res, agent, reqObj) => {
     });
 
     proxyRes.on('data', (chunk) => {
-      Logger.info(logPrefix + 'DATA');
+      Logger.debug(logPrefix + 'DATA');
       body.push(chunk);
       if (!needTranslation) res.write(chunk);
     });
@@ -267,14 +277,12 @@ const startProxyRequest = (res, agent, reqObj) => {
       if (!needTranslation) {
         Logger.info(logPrefix + 'END WITHOUT PROCESSING');
         res.end();
-        Logger.debug('===========================================================================');
       }
       const buffer = Buffer.concat(body);
       savedRes.headers['content-length'] = buffer.length;
       ResponseCache.save(reqObj, null, savedRes, buffer);
       if (needTranslation) {
         sendTranslation(res, buffer, reqObj, savedRes, logPrefix);
-        Logger.debug('===========================================================================');
       }
     });
 
@@ -282,7 +290,6 @@ const startProxyRequest = (res, agent, reqObj) => {
 
   proxyReq.on('error', (e) => {
     Logger.error(reqObj.id + ' PROXY REQUEST ERROR');
-    Logger.debug('===========================================================================');
     serverError(e, res);
   });
 
@@ -290,8 +297,8 @@ const startProxyRequest = (res, agent, reqObj) => {
 };
 
 const sendBuffer = (res, buffer, proxyResObj, logMsg) => {
-  console.log(logMsg + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);
-  Logger.debug(logMsg + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);
+  //console.log(logMsg + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);
+  Logger.info(logMsg + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);
   res.writeHead(proxyResObj.statusCode, proxyResObj.statusMessage, proxyResObj.headers)
   res.end(buffer);
 }
@@ -313,7 +320,7 @@ const sendTranslation = async (res, buffer, reqObj, proxyResObj, logPrefix) => {
       proxyResObj.headers['content-length'] = gzipped.length;
       ResponseCache.save(reqObj, proxyResObj.lang, proxyResObj, gzipped);
     }
-    console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
+    //console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
     Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
     res.writeHead(proxyResObj.statusCode, proxyResObj.statusMessage, proxyResObj.headers);
     res.end(gzipped);
