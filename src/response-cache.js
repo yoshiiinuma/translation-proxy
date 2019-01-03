@@ -65,14 +65,14 @@ const createResponseCache = (conf) => {
       if (!conf.cacheEnabled) return false;
       if (!(opts.method === 'GET' || opts.method === 'HEAD')) return false;
       if (conf.cacheSkip) {
-        if (conf.cacheSkip.some((keyword) => { return resObj.href.includes(keyword) })) {
+        if (conf.cacheSkip.some((keyword) => { return opts.href.includes(keyword) })) {
           return false;
         }
       }
       const hrefKey = getKey('HREF-', opts, lang)
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.debug(opts.id + ' CACHE SAVE: ' + resObj.href);
+      Logger.debug(opts.id + ' CACHE SAVE: ' + opts.href);
       Logger.debug(opts.id + ' CACHE SAVE: ' + hrefKey);
       Logger.debug(opts.id + ' CACHE SAVE: ' + headKey);
       Logger.debug(opts.id + ' CACHE SAVE: ' + pageKey);

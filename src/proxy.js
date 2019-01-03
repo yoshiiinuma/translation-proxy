@@ -131,7 +131,6 @@ const serve = async (req, res) => {
   const agent = (req.connection.encrypted) ? https : http;
 
   const obj = reqToReqObj(req, id);
-  //const reqOpts = genReqOpts(obj);
 
   Logger.debug('#####################################################################');
   console.log(logPreCli + 'START: ' + obj.href);
@@ -159,10 +158,10 @@ const serve = async (req, res) => {
   if (original) {
     const savedRes = original.res
     if (obj.lang) {
-      savedRes.id = obj.id;
+      //savedRes.id = obj.id;
       savedRes.lang = obj.lang;
       savedRes.href = obj.href;
-      sendTranslation(res, original.buffer, savedRes, logPreSer);
+      sendTranslation(res, original.buffer, obj, savedRes, logPreSer);
     } else {
       sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
     }
@@ -233,16 +232,12 @@ const startProxyRequest = (res, agent, reqObj) => {
 
     let headers = Object.assign({}, proxyRes.headers);
     if (needTranslation) {
-      headers['access-control-allow-origin'] = reqOpts.host;
-      //headers['transfer-encoding'] = 'identity';
+      headers['access-control-allow-origin'] = reqObj.host;
       delete headers['transfer-encoding'];
-      //headers['content-encoding'] = 'gzip';
     }
     const savedRes = {
       statusCode: proxyRes.statusCode,
       statusMessage: proxyRes.statusMessage,
-      reqOpts,
-      id: reqObj.id,
       lang: reqObj.lang,
       href: reqObj.href,
       encoding,
@@ -274,7 +269,7 @@ const startProxyRequest = (res, agent, reqObj) => {
       savedRes.headers['content-length'] = buffer.length;
       ResponseCache.save(reqObj, null, savedRes, buffer);
       if (needTranslation) {
-        sendTranslation(res, buffer, savedRes, logPrefix);
+        sendTranslation(res, buffer, reqObj, savedRes, logPrefix);
         Logger.debug('===========================================================================');
       }
     });
@@ -297,8 +292,7 @@ const sendBuffer = (res, buffer, proxyResObj, logMsg) => {
   res.end(buffer);
 }
 
-const sendTranslation = async (res, buffer, proxyResObj, logPrefix) => {
-  //const doc = uncompress(buffer, proxyResObj.encoding);
+const sendTranslation = async (res, buffer, reqObj, proxyResObj, logPrefix) => {
   const doc = await uncompressAsync(buffer, proxyResObj.encoding);
   let gzipped;
   let pageType = 'TRANSLATED PAGE';
@@ -308,14 +302,12 @@ const sendTranslation = async (res, buffer, proxyResObj, logPrefix) => {
       Logger.error(logPrefix + 'TRANSLATION FAILED');
       Logger.error(err);
       pageType = 'ERROR INJECTED PAGE';
-      //gzipped = compress(injectAlert(doc), proxyResObj.encoding);
       gzipped = await compressAsync(injectAlert(doc), proxyResObj.encoding);
       proxyResObj.headers['content-length'] = gzipped.length;
     } else {
-      //gzipped = compress(translatedHtml, proxyResObj.encoding);
       gzipped = await compressAsync(translatedHtml, proxyResObj.encoding);
       proxyResObj.headers['content-length'] = gzipped.length;
-      ResponseCache.save(proxyResObj.reqOpts, proxyResObj.lang, proxyResObj, gzipped);
+      ResponseCache.save(reqObj, proxyResObj.lang, proxyResObj, gzipped);
     }
     console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
     Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
