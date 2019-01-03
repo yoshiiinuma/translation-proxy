@@ -11,7 +11,7 @@ import Logger from './logger.js';
 import { loadConfig } from './conf.js';
 import createHtmlPageTranslator from './page-translator.js';
 import createCache from './cache.js';
-import { compress, uncompress } from './compress.js';
+import { compress, uncompress, compressAsync, uncompressAsync } from './compress.js';
 import createResponseCache from './response-cache.js';
 
 const conf = loadConfig('./config/config.json');
@@ -147,7 +147,7 @@ const serve = async (req, res) => {
   let proxyReq = null;
 
   if (obj.lang) {
-    const translated = await ResponseCache.get(obj, obj.lang, id);
+    const translated = await ResponseCache.get(obj, obj.lang);
     if (translated) {
       const savedRes = translated.res
       sendBuffer(res, translated.buffer, savedRes, logPreSer + 'END: RETURNING CACHED TRANSLATED');
@@ -155,12 +155,14 @@ const serve = async (req, res) => {
     }
   }
 
-  const original = await ResponseCache.get(obj, null, id);
+  const original = await ResponseCache.get(obj, null);
   if (original) {
     const savedRes = original.res
     if (obj.lang) {
+      savedRes.id = obj.id;
       savedRes.lang = obj.lang;
-      sendTranslation(res, original.buffer, savedRes, obj.id, logPreSer);
+      savedRes.href = obj.href;
+      sendTranslation(res, original.buffer, savedRes, logPreSer);
     } else {
       sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
     }
@@ -240,7 +242,9 @@ const startProxyRequest = (res, agent, reqObj) => {
       statusCode: proxyRes.statusCode,
       statusMessage: proxyRes.statusMessage,
       reqOpts,
+      id: reqObj.id,
       lang: reqObj.lang,
+      href: reqObj.href,
       encoding,
       headers
     };
@@ -268,9 +272,9 @@ const startProxyRequest = (res, agent, reqObj) => {
       }
       const buffer = Buffer.concat(body);
       savedRes.headers['content-length'] = buffer.length;
-      ResponseCache.save(reqObj, null, savedRes, buffer, reqObj.id);
+      ResponseCache.save(reqObj, null, savedRes, buffer);
       if (needTranslation) {
-        sendTranslation(res, buffer, savedRes, reqObj.id, logPrefix);
+        sendTranslation(res, buffer, savedRes, logPrefix);
         Logger.debug('===========================================================================');
       }
     });
@@ -286,33 +290,36 @@ const startProxyRequest = (res, agent, reqObj) => {
   return proxyReq;
 };
 
-const sendBuffer = (res, buffer, meta, logMsg) => {
-  console.log(logMsg + ': ' + buffer.length + ' == ' + meta.headers['content-length']);
-  Logger.debug(logMsg + ': ' + buffer.length + ' == ' + meta.headers['content-length']);
-  res.writeHead(meta.statusCode, meta.statusMessage, meta.headers)
+const sendBuffer = (res, buffer, proxyResObj, logMsg) => {
+  console.log(logMsg + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);
+  Logger.debug(logMsg + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);
+  res.writeHead(proxyResObj.statusCode, proxyResObj.statusMessage, proxyResObj.headers)
   res.end(buffer);
 }
 
-const sendTranslation = (res, buffer, meta, id, logPrefix) => {
-  const doc = uncompress(buffer, meta.encoding);
+const sendTranslation = async (res, buffer, proxyResObj, logPrefix) => {
+  //const doc = uncompress(buffer, proxyResObj.encoding);
+  const doc = await uncompressAsync(buffer, proxyResObj.encoding);
   let gzipped;
   let pageType = 'TRANSLATED PAGE';
 
-  translatePage(doc, meta.lang, (err, translatedHtml) => {
+  translatePage(doc, proxyResObj.lang, async (err, translatedHtml) => {
     if (err) {
       Logger.error(logPrefix + 'TRANSLATION FAILED');
       Logger.error(err);
       pageType = 'ERROR INJECTED PAGE';
-      gzipped = compress(injectAlert(doc), meta.encoding);
-      meta.headers['content-length'] = gzipped.length;
+      //gzipped = compress(injectAlert(doc), proxyResObj.encoding);
+      gzipped = await compressAsync(injectAlert(doc), proxyResObj.encoding);
+      proxyResObj.headers['content-length'] = gzipped.length;
     } else {
-      gzipped = compress(translatedHtml, meta.encoding);
-      meta.headers['content-length'] = gzipped.length;
-      ResponseCache.save(meta.reqOpts, meta.lang, meta, gzipped, id);
+      //gzipped = compress(translatedHtml, proxyResObj.encoding);
+      gzipped = await compressAsync(translatedHtml, proxyResObj.encoding);
+      proxyResObj.headers['content-length'] = gzipped.length;
+      ResponseCache.save(proxyResObj.reqOpts, proxyResObj.lang, proxyResObj, gzipped);
     }
-    console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
-    Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + meta.headers['content-length']);
-    res.writeHead(meta.statusCode, meta.statusMessage, meta.headers);
+    console.log(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
+    Logger.info(logPrefix + 'END: RETURNING ' + pageType + ': ' + proxyResObj.headers['content-length']);
+    res.writeHead(proxyResObj.statusCode, proxyResObj.statusMessage, proxyResObj.headers);
     res.end(gzipped);
   });
 };

@@ -45,13 +45,13 @@ const createResponseCache = (conf) => {
   const cache = createCache(conf);
 
   const ResponseCache = {
-    get: async (opts, lang, id) => {
+    get: async (opts, lang) => {
       if (!conf.cacheEnabled) return null;
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.debug(id + ' CACHE GET: ' + opts.href);
-      Logger.debug(id + ' CACHE GET: ' + headKey);
-      Logger.debug(id + ' CACHE GET: ' + pageKey);
+      Logger.debug(opts.id + ' CACHE GET: ' + opts.href);
+      Logger.debug(opts.id + ' CACHE GET: ' + headKey);
+      Logger.debug(opts.id + ' CACHE GET: ' + pageKey);
       const head = await cache.getAsync(getKey('HEAD-', opts, lang));
       const body = await cache.getAsync(getKey('PAGE-', opts, lang));
       if (!head || !body) return null;
@@ -61,23 +61,23 @@ const createResponseCache = (conf) => {
       };
     },
 
-    save: async (opts, lang, header, body, id) => {
+    save: async (opts, lang, resObj, body) => {
       if (!conf.cacheEnabled) return false;
       if (!(opts.method === 'GET' || opts.method === 'HEAD')) return false;
       if (conf.cacheSkip) {
-        if (conf.cacheSkip.some((keyword) => { return opts.href.includes(keyword) })) {
+        if (conf.cacheSkip.some((keyword) => { return resObj.href.includes(keyword) })) {
           return false;
         }
       }
       const hrefKey = getKey('HREF-', opts, lang)
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.debug(id + ' CACHE SAVE: ' + opts.method + ' ' + opts.href);
-      Logger.debug(id + ' CACHE SAVE: ' + hrefKey);
-      Logger.debug(id + ' CACHE SAVE: ' + headKey);
-      Logger.debug(id + ' CACHE SAVE: ' + pageKey);
-      await cache.setAsync(hrefKey, opts.href);
-      await cache.setAsync(headKey, JSON.stringify(header));
+      Logger.debug(opts.id + ' CACHE SAVE: ' + resObj.href);
+      Logger.debug(opts.id + ' CACHE SAVE: ' + hrefKey);
+      Logger.debug(opts.id + ' CACHE SAVE: ' + headKey);
+      Logger.debug(opts.id + ' CACHE SAVE: ' + pageKey);
+      await cache.setAsync(hrefKey, resObj.href);
+      await cache.setAsync(headKey, JSON.stringify(resObj));
       await cache.setAsync(pageKey, body);
       return true;
     }
