@@ -32,6 +32,9 @@ const setUncaughtExceptionHandler = () => {
 
 const conf = loadConfig('./config/config.json');
 
+const targetHttpPort = conf.targetHttpPort || 80;
+const targetHttpsPort = conf.targetHttpsPort || 443;
+
 const ResponseCache = createResponseCache(conf);
 
 const notFound = (res) => {
@@ -83,7 +86,7 @@ const reqToReqObj = (req, id) => {
   const method = req.method;
 
   let host = req.headers.host;
-  let port = (req.connection.encrypted) ? conf.httpsPort : conf.httpPort;
+  let port = (req.connection.encrypted) ? targetHttpsPort : targetHttpPort;
   let lang = null;
   const matched = rgxHost.exec(host);
   if (matched) {
@@ -348,12 +351,12 @@ const certs = {
 
 const httpServer = http.createServer(serve);
 const httpsServer = https.createServer(certs, serve);
+const serverHttpPort = conf.serverHttpPort || 80;
+const serverHttpsPort = conf.serverHttpsPort || 443;
 
 httpServer.on('clientError', clientError);
 httpsServer.on('clientError', clientError);
 
-//httpServer.listen(80, '127.0.0.1');
-//httpsServer.listen(443, '127.0.0.1');
-httpServer.listen(80, '0.0.0.0');
-httpsServer.listen(443, '0.0.0.0');
+httpServer.listen(serverHttpPort, '0.0.0.0');
+httpsServer.listen(serverHttpsPort, '0.0.0.0');
 
