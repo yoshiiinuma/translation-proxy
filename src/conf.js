@@ -5,9 +5,9 @@ import Logger from './logger.js';
 /**
  * arg: { env }
  */
-export const loadConfig = (file) => {
+export const loadConfig = (file, updates) => {
   if (!fs.existsSync(file)) return null;
-  const conf = JSON.parse(fs.readFileSync(file));
+  let conf = JSON.parse(fs.readFileSync(file));
   let proxiedHosts = {};
   if (conf.proxiedHosts) {
     conf.proxiedHosts.forEach((host) => {
@@ -15,6 +15,9 @@ export const loadConfig = (file) => {
     });
   }
   conf.proxiedHosts = proxiedHosts;
+  if (updates) {
+    conf = { ...conf, ...updates };
+  }
   Logger.initialize(conf);
   console.log(conf);
   return conf;
