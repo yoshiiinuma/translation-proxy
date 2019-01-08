@@ -67,11 +67,13 @@ export const setUpProxy = (config) => {
 
     let host = req.headers.host;
     let port = (req.connection.encrypted) ? targetHttpsPort : targetHttpPort;
+    let requestedHost = host;
+    let requestedPort = port;
     let lang = null;
     const matched = rgxHost.exec(host);
     if (matched) {
       host = matched[1];
-      //port = parseInt(matched[2]);
+      requestedPort = parseInt(matched[2]);
     }
 
     const params = [];
@@ -103,6 +105,8 @@ export const setUpProxy = (config) => {
       method,
       host,
       port,
+      requestedHost,
+      requestedPort,
       path,
       headers,
       rawHeaders: req.rawHeaders
@@ -110,7 +114,7 @@ export const setUpProxy = (config) => {
   }
 
   const genReqOpts = (reqObj) => {
-    const {id,  href, remoteIp, lang, scheme, rawHeaders, ...opts } = reqObj;
+    const {id,  href, requestedHost, requestedPort, remoteIp, lang, scheme, rawHeaders, ...opts } = reqObj;
 
     if (reqObj.scheme === 'https') {
       opts.rejectUnauthorized = false;

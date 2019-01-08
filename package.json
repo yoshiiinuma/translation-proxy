@@ -2,10 +2,10 @@
   "name": "translation-proxy",
   "version": "1.0.0",
   "description": "The proxy server translates the contents from the origin by using Google Cloud Translation API",
-  "main": "dist/proxy.js",
+  "main": "dist/index.js",
   "scripts": {
     "exec": "babel-node src/index.js",
-    "serv": "babel-node src/proxy.js",
+    "serv": "babel-node src/index.js",
     "build": "babel src --out-dir dist -s",
     "server": "nodemon --watch dist",
     "watch": "webpack --watch --mode development",
