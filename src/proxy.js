@@ -326,6 +326,11 @@ export const setUpProxy = (config) => {
     });
   };
 
-  return serve;
+  //return serve;
+
+  return {
+    serve,
+    startProxyRequest
+  };
 }
 

@@ -32,8 +32,8 @@ const certs = {
 
 const proxy = setUpProxy(conf);
 
-const httpServer = http.createServer(proxy);
-const httpsServer = https.createServer(certs, proxy);
+const httpServer = http.createServer(proxy.serve);
+const httpsServer = https.createServer(certs, proxy.serve);
 const serverHttpPort = conf.serverHttpPort || 80;
 const serverHttpsPort = conf.serverHttpsPort || 443;
 
