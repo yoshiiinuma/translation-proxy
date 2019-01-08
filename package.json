@@ -4,7 +4,7 @@
   "description": "The proxy server translates the contents from the origin by using Google Cloud Translation API",
   "main": "dist/proxy.js",
   "scripts": {
-    "exec": "babel-node src/proxy.js",
+    "exec": "babel-node src/index.js",
     "serv": "babel-node src/proxy.js",
     "build": "babel src --out-dir dist -s",
     "server": "nodemon --watch dist",
