@@ -12,7 +12,7 @@ export const createHtmlPageTranslator = (conf) => {
   const domBreakdownThreshold = conf.domBreakdownThreshold;
 
   const translatePage = (html, lang, callback) => {
-    const page = loadPage(html);
+    const page = loadPage(html, conf);
     page.translateAll(selectors, lang, maxTextPerRequest, domBreakdownThreshold, (err, translatedHtml) => {
       if (err) {
         callback(err);
