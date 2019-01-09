@@ -9,6 +9,16 @@ const DEFAULT_LIMIT = 5000;
 export default (html, conf) => {
   const $ = cheerio.load(html);
 
+  const translatePage = (lang, callback) => {
+    translateAll(conf.translationSelectors, lang, conf.maxTextPerRequest, conf.domBreakdownThreshold, (err, translatedHtml) => {
+      if (err) {
+        callback(err);
+      } else {
+        callback(null, translatedHtml);
+      }
+    });
+  };
+
   /**
    * limit: Max text size to send to API
    * threshold: Threshold that specifies how deep the parser goes down into the DOM tree.
@@ -239,12 +249,8 @@ export default (html, conf) => {
     return $(selector);
   };
 
-  //const cheerioObject = (e) => {
-  //  return $(e);
-  //};
-
   return {
-    //cheerioObject,
+    translatePage,
     translateAll,
     translatePortion,
     createPostData,
