@@ -6,6 +6,7 @@ import https from 'https';
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
 import { setUpProxy, clientError } from './proxy.js';
+import { createHtmlPageTranslator } from './page-translator.js';
 
 const setUncaughtExceptionHandler = () => {
   process.on('uncaughtException', (err) => {
@@ -30,7 +31,8 @@ const certs = {
   cert: fs.readFileSync(conf.sslCert),
 };
 
-const proxy = setUpProxy(conf);
+const translator = createHtmlPageTranslator(conf);
+const proxy = setUpProxy(conf, translator);
 
 const httpServer = http.createServer(proxy.serve);
 const httpsServer = https.createServer(certs, proxy.serve);

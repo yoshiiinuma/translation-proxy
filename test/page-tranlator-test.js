@@ -3,13 +3,13 @@ import fs from 'fs';
 import util from 'util';
 import { expect } from 'chai';
 
-import createHtmlPageTranslator from '../src/page-translator.js';
+import { loadPage } from '../src/page-translator.js';
 import { loadConfig } from '../src/conf.js';
 import { createConnectionOption, callTranslateApi } from '../src/translate.js';
 
 const conf = loadConfig('./config/config.json');
 const html1 = fs.readFileSync('./test/simple.html');
-const page = createHtmlPageTranslator(html1, conf);
+const page = loadPage(html1, conf);
 
 //describe('page-translator#showDomTree', () => {
 //  it('prints out dom tree structure', (done) => {
@@ -21,7 +21,7 @@ const page = createHtmlPageTranslator(html1, conf);
 //describe('page-translator#translateAll', () => {
 //  //const html = fs.readFileSync('./test/test.html').toString();
 //  const html = fs.readFileSync('./test/spo-faq.html').toString();
-//  const page = createHtmlPageTranslator(html, conf);
+//  const page = loadPage(html, conf);
 //  const sorted = page.sortOutBySize(['#header', '#main', '#footer'], 8000, 500);
 //
 //  it('translate html page by using API', () => {
@@ -38,7 +38,7 @@ const page = createHtmlPageTranslator(html1, conf);
 
 //describe('page-translator#translatePortion', () => {
 //  const html = fs.readFileSync('./test/test.html').toString();
-//  const page = createHtmlPageTranslator(html, conf);
+//  const page = loadPage(html, conf);
 //  const sorted = page.sortOutBySize('#main', 1000, 300);
 //  const components = sorted[3];
 //
@@ -71,7 +71,7 @@ const htmlWithText =
 
 describe('page-translator#hasText', () => {
   context('when element has a direct text', () => {
-    const page = createHtmlPageTranslator(htmlWithText, conf);
+    const page = loadPage(htmlWithText, conf);
     const div = page.select('#top');
 
     it('returns true', () => {
@@ -80,7 +80,7 @@ describe('page-translator#hasText', () => {
   });
 
   context('when element has no direect text', () => {
-    const page = createHtmlPageTranslator(htmlWithoutText, conf);
+    const page = loadPage(htmlWithoutText, conf);
     const div = page.select('#top');
 
     it('returns false', () => {
@@ -90,7 +90,7 @@ describe('page-translator#hasText', () => {
 });
 
 describe('page-translator#replaceTexts', () => {
-  const page = createHtmlPageTranslator(html1, conf);
+  const page = loadPage(html1, conf);
   const sorted = page.sortOutBySize('body', 15, 15);
   const components = sorted[6];
   const translated = [

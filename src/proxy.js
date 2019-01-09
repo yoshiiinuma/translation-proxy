@@ -7,7 +7,7 @@ import requestIp from 'request-ip';
 import cheerio from 'cheerio';
 
 import Logger from './logger.js';
-import createHtmlPageTranslator from './page-translator.js';
+//import createHtmlPageTranslator from './page-translator.js';
 import { compress, uncompress, compressAsync, uncompressAsync } from './compress.js';
 import createResponseCache from './response-cache.js';
 
@@ -52,9 +52,8 @@ const injectAlert = (html) => {
   }
 }
 
-export const setUpProxy = (config) => {
+export const setUpProxy = (conf, translator) => {
   let cnt = 0;
-  const conf = config;
   const ResponseCache = createResponseCache(conf);
   const targetHttpPort = conf.targetHttpPort || 80;
   const targetHttpsPort = conf.targetHttpsPort || 443;
@@ -293,7 +292,7 @@ export const setUpProxy = (config) => {
     let gzipped;
     let pageType = 'TRANSLATED PAGE';
 
-    translatePage(doc, proxyResObj.lang, async (err, translatedHtml) => {
+    translator.translatePage(doc, proxyResObj.lang, async (err, translatedHtml) => {
       if (err) {
         Logger.error(logPrefix + 'TRANSLATION FAILED');
         Logger.error(err);
@@ -315,16 +314,16 @@ export const setUpProxy = (config) => {
     });
   };
 
-  const translatePage = (doc, lang, callback) => {
-    const page = createHtmlPageTranslator(doc, conf);
-    page.translateAll(conf.translationSelectors, lang, conf.maxTextPerRequest, conf.domBreakdownThreshold, (err, translatedHtml) => {
-      if (err) {
-        callback(err);
-      } else {
-        callback(null, translatedHtml);
-      }
-    });
-  };
+  //const translatePage = (doc, lang, callback) => {
+  //  const page = createHtmlPageTranslator(doc, conf);
+  //  page.translateAll(conf.translationSelectors, lang, conf.maxTextPerRequest, conf.domBreakdownThreshold, (err, translatedHtml) => {
+  //    if (err) {
+  //      callback(err);
+  //    } else {
+  //      callback(null, translatedHtml);
+  //    }
+  //  });
+  //};
 
   //return serve;
 

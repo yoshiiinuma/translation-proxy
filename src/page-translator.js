@@ -6,7 +6,27 @@ import { createConnectionOption, callTranslateApi } from './translate.js';
 
 const DEFAULT_LIMIT = 5000;
 
-export default (html, conf) => {
+export createHtmlPageTranslator = (conf) => {
+  const selectors = conf.translationSelectors;
+  const maxTextPerRequest = conf.maxTextPerRequest;
+  const domBreakdownThreshold = conf.domBreakdownThreshold;
+
+  const translatePage = (html, lang, callback) => {
+    const page = loadPage(html);
+    page.translateAll(selectors, lang, maxTextPerRequest, domBreakdownThreshold, (err, translatedHtml) => {
+      if (err) {
+        callback(err);
+      } else {
+        callback(null, translatedHtml);
+      }
+    });
+  };
+
+  return { translatePage };
+}
+
+//export default (html, conf) => {
+export loadPage = (html, conf) => {
   const $ = cheerio.load(html);
 
   const translatePage = (lang, callback) => {
