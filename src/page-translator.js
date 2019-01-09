@@ -25,7 +25,6 @@ export const createHtmlPageTranslator = (conf) => {
   return { translatePage };
 }
 
-//export default (html, conf) => {
 export const loadPage = (html, conf) => {
   const $ = cheerio.load(html);
 

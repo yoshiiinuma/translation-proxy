@@ -7,7 +7,6 @@ import requestIp from 'request-ip';
 import cheerio from 'cheerio';
 
 import Logger from './logger.js';
-//import createHtmlPageTranslator from './page-translator.js';
 import { compress, uncompress, compressAsync, uncompressAsync } from './compress.js';
 import createResponseCache from './response-cache.js';
 
@@ -313,19 +312,6 @@ export const setUpProxy = (conf, translator) => {
       res.end(gzipped);
     });
   };
-
-  //const translatePage = (doc, lang, callback) => {
-  //  const page = createHtmlPageTranslator(doc, conf);
-  //  page.translateAll(conf.translationSelectors, lang, conf.maxTextPerRequest, conf.domBreakdownThreshold, (err, translatedHtml) => {
-  //    if (err) {
-  //      callback(err);
-  //    } else {
-  //      callback(null, translatedHtml);
-  //    }
-  //  });
-  //};
-
-  //return serve;
 
   return {
     serve,
