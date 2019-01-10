@@ -80,6 +80,18 @@ const createResponseCache = (conf) => {
       await cache.setAsync(headKey, JSON.stringify(resObj));
       await cache.setAsync(pageKey, body);
       return true;
+    },
+
+    del: async (opts, lang) => {
+      if (!conf.cacheEnabled) return false;
+      const headKey = getKey('HEAD-', opts, lang)
+      const pageKey = getKey('PAGE-', opts, lang)
+      Logger.debug(opts.id + ' CACHE DEL: ' + opts.href);
+      Logger.debug(opts.id + ' CACHE DEL: ' + headKey);
+      Logger.debug(opts.id + ' CACHE DEL: ' + pageKey);
+      cache.delAsync(getKey('HEAD-', opts, lang));
+      cache.delAsync(getKey('PAGE-', opts, lang));
+      return true;
     }
   };
 
