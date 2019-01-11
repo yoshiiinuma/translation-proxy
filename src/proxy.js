@@ -51,7 +51,7 @@ const injectAlert = (html) => {
   }
 }
 
-export const setUpProxy = (conf, translator) => {
+export const setUpProxy = (conf, translator, proxyFunc) => {
   let cnt = 0;
   const ResponseCache = createResponseCache(conf);
   const targetHttpPort = conf.targetHttpPort || 80;
@@ -87,7 +87,7 @@ export const setUpProxy = (conf, translator) => {
     if (params.length > 0) path += '?' + params.join('&');
 
     const headers = Object.assign({}, req.headers);
-    const remoteIp = requestIp.getClientIp(req);
+    const remoteIp = requestIp.getClientIp(req) || '';
     const forwardedFor = req.headers['x-forwarded-for'] || req.headers['forwarded'] || remoteIp;
     headers['X-Forwarded-For'] = forwardedFor;
     headers['X-Forwarded-Proto'] = scheme;
@@ -148,6 +148,7 @@ export const setUpProxy = (conf, translator) => {
   };
 
   const serve = async (req, res) => {
+    const startProxy = proxyFunc || startProxyRequest;
     const idOrig = cnt++;
     const id = idOrig.toString().padStart(12, ' ');
     const logPreCli = id + ' CLIENT REQUEST ';
@@ -189,7 +190,7 @@ export const setUpProxy = (conf, translator) => {
         sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
       }
     } else {
-      proxyReq = startProxyRequest(res, agent, obj);
+      proxyReq = startProxy(res, agent, obj);
     }
 
     req.on('data', (chunk) => {

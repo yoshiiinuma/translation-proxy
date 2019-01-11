@@ -116,5 +116,5 @@ const closeServer = (server, msg) => {
   });
 };
 
-openServer(testWebServer, targetHttpPort, 'TEST WEB SERVER OPENED');
+//openServer(testWebServer, targetHttpPort, 'TEST WEB SERVER OPENED');
 
