@@ -51,7 +51,7 @@ const injectAlert = (html) => {
   }
 }
 
-export const setUpProxy = (conf, translator, proxyFunc) => {
+export const setUpProxy = (conf, translator, proxyFunc, callback) => {
   let cnt = 0;
   const ResponseCache = createResponseCache(conf);
   const targetHttpPort = conf.targetHttpPort || 80;
@@ -212,6 +212,11 @@ export const setUpProxy = (conf, translator, proxyFunc) => {
       Logger.error(logPreSer + 'ERROR');
       serverError(e, res);
     });
+
+    res.on('end', () => {
+      Logger.info(logPreSer + 'END');
+      if (callback) callback();
+    })
   };
 
   const startProxyRequest = (res, agent, reqObj) => {

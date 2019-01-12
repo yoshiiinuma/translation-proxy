@@ -5,6 +5,8 @@ import fs from 'fs';
 import util from 'util';
 import { expect } from 'chai';
 import nock from 'nock';
+import events from 'events';
+import { Writable } from 'stream';
 
 import httpMocks from 'node-mocks-http';
 
@@ -155,55 +157,129 @@ const proxyFunc = (res, agent, reqObj) => {
     'content-length': buffer.length,
     'content-type': 'text/thml'
   });
-  res.end(buffer);
+  //res.end(buffer);
+  res.write(doc);
+  res.end();
+  res.emit('end');
+  res.emit('finish');
+  return httpMocks.createRequest({
+      method: 'GET',
+      url: 'http://localhost:9998/path/to',
+      headers: {
+        host: 'localhost:9998',
+      },
+      connection: { encrypted: false }
+    });
 };
 
-const proxy = setUpProxy(conf, translator, proxyFunc);
-const ResponseCache = createResponseCache(conf);
 
-//nock('http://localhost:9998').get('/path/to').reply(200, doc);
-nock('http://localhost:9998').get('/path/to').reply(404);
+nock('http://localhost:9998').get('/path/to').reply(200, doc);
+//nock('http://localhost:9998').get('/path/to').reply(404);
 
 const reqObj = reqObj1;
 
-describe('proxy#serve', () => {
+const createFakeAgent = () => {
+  return {
+    request: (opts) => {
+      console.log('FAKE AGENT REQUEST CALLED');
+      console.log(opts);
+      //const res = httpMocks.createResponse({
+      //  writableStream: Writable,
+      //  eventEmitter: events.EventEmitter
+      //});
+      const res = new http.IncomingMessage();
+      res.emit('data', doc);
+      res.emit('end');
+      return res;
+    }
+  }
+}
+
+describe('proxy#startProxyRequest', () => {
+  const proxy = setUpProxy(conf, translator);
   let req;
   let res;
-  let cache;
 
   before((done) => {
     req = httpMocks.createRequest({
       method: 'GET',
-      url: 'http://localhost:9996/path/to',
+      url: 'http://localhost:9998/path/to',
       //host: 'localhost:9996',
       //hostname: 'localhost',
       headers: {
-        host: 'localhost:9996',
+        host: 'localhost:9998',
       },
-      connection: { encrypted: false }
     });
-    res = httpMocks.createResponse();
-    ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
+    res = httpMocks.createResponse({
+      writableStream: Writable,
+      eventEmitter: events.EventEmitter
+    });
+    done();
+    //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
     //ResponseCache.del(reqObj, null).then(done());
   });
 
-  after((done) => {
-    ResponseCache.del(reqObj, null).then(done());
-  });
-
   context('With cache', () => {
-    const url = 'http://localhost:' + serverHttpPort;
     it('sends a request to the specified web server', (done) => {
-      proxy.serve(req, res);
-      expect(res.statusCode).to.be.equal(200);
-      expect(res.statusMessage).to.be.equal('OK');
-      console.log('--------------------------------------------');
-      console.log(res);
-      console.log('--------------------------------------------');
-      console.log(res.data);
-      console.log(res.body);
-      console.log(res._getData());
-      done();
+      res.on('end', () => {
+        console.log('XXX RES END');
+        expect(res.statusCode).to.be.equal(200);
+        expect(res.statusMessage).to.be.equal('OK');
+        const data = res._getData();
+        console.log('--------------------------------------------');
+        console.log(data);
+        console.log('--------------------------------------------');
+        done();
+      });
+      const agent = createFakeAgent();
+      proxy.startProxyRequest(res, agent, reqObj2);
     });
   });
 });
+
+//    const url = 'http://localhost:' + serverHttpPort;
+
+//describe('proxy#serve', () => {
+//  const ResponseCache = createResponseCache(conf);
+//  let req;
+//  let res;
+//  let cache;
+//
+//  before((done) => {
+//    req = httpMocks.createRequest({
+//      method: 'GET',
+//      url: 'http://localhost:9996/path/to',
+//      //host: 'localhost:9996',
+//      //hostname: 'localhost',
+//      headers: {
+//        host: 'localhost:9996',
+//      },
+//      connection: { encrypted: false }
+//    });
+//    res = httpMocks.createResponse({
+//      //writableStream: true,
+//      //eventEmitter: events.EventEmitter
+//    });
+//    //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
+//    ResponseCache.del(reqObj, null).then(done());
+//  });
+//
+//  after((done) => {
+//    ResponseCache.del(reqObj, null).then(done());
+//  });
+//
+//  context('With cache', () => {
+//    it('sends a request to the specified web server', (done) => {
+//      const proxy = setUpProxy(conf, translator, proxyFunc, () => {
+//        expect(res.statusCode).to.be.equal(200);
+//        expect(res.statusMessage).to.be.equal('OK');
+//        const data = res._getData();
+//        console.log('--------------------------------------------');
+//        console.log(data);
+//        console.log('--------------------------------------------');
+//        done();
+//      });
+//      proxy.serve(req, res);
+//    });
+//  });
+//});
