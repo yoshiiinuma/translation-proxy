@@ -179,48 +179,46 @@ nock('http://localhost:9998').get('/path/to').reply(200, doc);
 const reqObj = reqObj1;
 
 class MockIncomingMessage extends events.EventEmitter {
-  constructor(name, callback) {
+  constructor() {
     super();
-    console.log(name + ' MOCK INCOMING CONSTRUCTOR')
-    this.name = name;
-    if (callback) this.callback = callback;
+    console.log('MOCK INCOMING CONSTRUCTOR')
     this.statusCode = 200;
     this.statusMessage = 'OK';
     this.headers = {
       'content-type': 'text/html'
     }
   }
+}
 
-  //write(chunk) {
-  //  console.log(this.name + ' MOCK RESPONSE WRITE')
-  //  //this.emit('data', chunk);
-  //}
-
-  //end(chunk) {
-  //  console.log(this.name + ' MOCK RESPONSE END');
-  //  if (chunk) this.emit('data', chunk);
-  //  this.emit('end');
-  //  if (this.callback) this.callback();
-  //}
+class MockClientRequest extends events.EventEmitter {
+  constructor() {
+    super();
+    console.log('MOCK ClientRequest CONSTRUCTOR')
+  }
 }
 
 class MockResponse extends events.EventEmitter {
-  constructor(name, callback) {
+  constructor(callback) {
     super();
-    console.log(name + ' MOCK RESPONSE CONSTRUCTOR')
-    this.name = name;
+    console.log('MOCK RESPONSE CONSTRUCTOR')
     if (callback) this.callback = callback;
-    this._data = ''
+    this.data = '';
+  }
+
+  writeHead(statusCode, statusMessage, headers) {
+    this.statusCode = statusCode;
+    this.statusMessage = statusMessage;
+    this.headers = this.headers;
   }
 
   write(chunk) {
-    console.log(this.name + ' MOCK RESPONSE WRITE')
-    this._data += chunk;
+    console.log('MOCK RESPONSE WRITE');
+    this.data += chunk;
     this.emit('data', chunk);
   }
 
   end(chunk) {
-    console.log(this.name + ' MOCK RESPONSE END');
+    console.log('MOCK RESPONSE END');
     //if (chunk) this.emit('data', chunk);
     this.emit('end');
     if (chunk) {
@@ -232,14 +230,17 @@ class MockResponse extends events.EventEmitter {
 
 const createFakeAgent = (res) => {
   return {
-    request: (opts) => {
+    request: (opts, callback) => {
       console.log('FAKE AGENT REQUEST CALLED');
       console.log(opts);
       //const res = httpMocks.createResponse({
       //  writableStream: Writable,
       //  eventEmitter: events.EventEmitter
       //});
-      return res;
+      setTimeout(() => {
+        callback(res);
+      }, 100);
+      return new MockClientRequest();
     }
   }
 }
@@ -247,8 +248,8 @@ const createFakeAgent = (res) => {
 describe('proxy#startProxyRequest', () => {
   const proxy = setUpProxy(conf, translator);
   let req;
-  let res1 = new MockResponse('AAA');
-  let res2 = new MockIncomingMessage('BBB');
+  let res1 = new MockResponse();
+  let res2 = new MockIncomingMessage();
 
   //before((done) => {
   //  done();
@@ -271,8 +272,10 @@ describe('proxy#startProxyRequest', () => {
       });
 
       proxy.startProxyRequest(res1, agent, reqObj2);
-      res2.emit('data', doc);
-      res2.emit('end');
+      setTimeout(() => {
+        res2.emit('data', doc);
+        res2.emit('end');
+      }, 500);      
     });
   });
 });
