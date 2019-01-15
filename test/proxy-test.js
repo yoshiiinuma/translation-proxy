@@ -4,6 +4,7 @@ import fs from 'fs';
 import util from 'util';
 import { expect } from 'chai';
 import events from 'events';
+import zlib from 'zlib';
 
 //import express from 'express';
 //import { Writable } from 'stream';
@@ -102,48 +103,16 @@ const resHeader = {
     'content-type': 'text/thml'
   }
 };
-const reqObj1 = {
-  id: 1,
-  href: 'http://localhost/path/to',
-  protocol: 'http:',
-  method: 'GET',
-  //host: 'localhost',
-  hostname: 'localhost',
-  port: serverHttpPort,
-  path: '/path/to',
-};
-
-const reqObj2 = {
-  id: 2,
-  href: 'http://localhost/path/to',
-  protocol: 'http:',
-  method: 'GET',
-  host: 'localhost',
-  //port: serverHttpPort,
-  port: targetHttpPort,
-  path: '/path/to',
-};
-
-const reqObj3 = {
-  id: 3,
-  href: 'http://localhost',
-  protocol: 'http:',
-  method: 'GET',
-  //host: 'localhost',
-  hostname: 'localhost',
-  port: serverHttpPort,
-  path: '/',
-};
 
 const translator = {
   translatePage: (html, lang, callback) => {
-    console.log('TRANSLATOR CALLED');
+    //console.log('TRANSLATOR CALLED');
     callback(null, translatedDoc);
   }
 };
 
 const proxyFunc = (res, agent, reqObj) => {
-  console.log('FAKE PROXY WAS CALLED');
+  //console.log('FAKE PROXY WAS CALLED');
   res.writeHead(200, 'OK', {
     //'content-encoding': 'gzip',
     'content-length': buffer.length,
@@ -170,11 +139,6 @@ class MockIncomingMessage extends events.EventEmitter {
     this._statusCode = (statusCode) ? statusCode : 200;
     this._statusMessage = (statusMessage) ? statusMessage : 'OK';
     this._headers = (headers) ? headers : { 'content-type': 'text/html' };
-    //this.statusCode = 200;
-    //this.statusMessage = 'OK';
-    //this.headers = {
-    //  'content-type': 'text/html'
-    //}
   }
 
   get statusCode() { return this._statusCode }
@@ -204,21 +168,21 @@ class MockResponse extends events.EventEmitter {
   get data() { return this._data }
 
   writeHead(statusCode, statusMessage, headers) {
-    console.log('MOCK RESPONSE WRITEHEAD CALLED');
-    console.log(headers);
+    //console.log('MOCK RESPONSE WRITEHEAD CALLED');
+    //console.log(headers);
     this._statusCode = statusCode;
     this._statusMessage = statusMessage;
     this._headers = headers;
   }
 
   write(chunk) {
-    console.log('MOCK RESPONSE WRITE CALLED');
+    //console.log('MOCK RESPONSE WRITE CALLED');
     this._data.push(chunk);
     this.emit('data', chunk);
   }
 
   end(chunk) {
-    console.log('MOCK RESPONSE END CALLED');
+    //console.log('MOCK RESPONSE END CALLED');
     if (chunk) this._data.push(chunk);
     this.emit('end');
     if (this.callback) this.callback();
@@ -228,14 +192,14 @@ class MockResponse extends events.EventEmitter {
 const createFakeAgent = (res, data) => {
   return {
     request: (opts, callback) => {
-      console.log('FAKE AGENT REQUEST CALLED');
-      console.log(opts);
+      //console.log('FAKE AGENT REQUEST CALLED');
+      //console.log(opts);
       setTimeout(() => {
-        console.log('FAKE RESPONSE RETURNED');
+        //console.log('FAKE RESPONSE RETURNED');
         callback(res);
       }, 5);
       setTimeout(() => {
-        console.log('FAKE RESPONSE DATA STARTED');
+        //console.log('FAKE RESPONSE DATA STARTED');
         res.emit('data', data);
         res.emit('end');
       }, 10);
@@ -255,7 +219,11 @@ const checkCache = (reqObj, lang, expected, callback) => {
         expect(cache.res.statusCode).to.be.equal(expected.res.statusCode);
         expect(cache.res.statusMessage).to.be.equal(expected.res.statusMessage);
         expect(cache.res.headers).to.eql(expected.res.headers);
-        expect(cache.buffer.toString()).to.be.equal(expected.body);
+        let buffer = cache.buffer;
+        if (cache.res.headers['content-encoding'] && cache.res.headers['content-encoding'] === 'gzip') {
+          buffer = zlib.gunzipSync(cache.buffer);
+        }
+        expect(buffer.toString()).to.be.equal(expected.body);
       })
       .then(callback());
   }, 5);
@@ -264,10 +232,53 @@ const checkCache = (reqObj, lang, expected, callback) => {
 describe('proxy#startProxyRequest', () => {
   const proxy = setUpProxy(conf, translator);
   const buffer = Buffer.from(doc);
+  const gzipped = zlib.gzipSync(doc);
+  const gzippedTranslatedDoc = zlib.gzipSync(translatedDoc);
 
-  context('given html with lang param', () => {
+  context('given html response without lang param', () => {
     const reqObj = {
       id: 2,
+      href: 'http://localhost/path/to',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: targetHttpPort,
+      path: '/path/to',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: { 'content-type': 'text/html' }
+      },
+      body: doc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage();
+    const agent = createFakeAgent(proxyRes, buffer);
+
+    before((done) => {
+      ResponseCache.del(reqObj, null).then(done());
+    });
+
+    it('returns the response received from a web server', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(res.data.toString()).to.be.equal(doc);
+        const expected2 = { ...expected };
+        expected2.res.headers['content-length'] = doc.length;
+        checkCache(reqObj, null, expected2, done);
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+
+  context('given html response with lang param', () => {
+    const reqObj = {
+      id: 3,
       lang: 'ja',
       href: 'http://localhost/path/to?lang=ja',
       protocol: 'http:',
@@ -294,11 +305,10 @@ describe('proxy#startProxyRequest', () => {
     const agent = createFakeAgent(proxyRes, buffer);
 
     before((done) => {
-      //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
       ResponseCache.del(reqObj, 'ja').then(done());
     });
 
-    it('sends a request to the specified web server', (done) => {
+    it('returns the response received from a web server', (done) => {
       res.on('end', (chunk) => {
         expect(res.statusCode).to.be.equal(expected.res.statusCode);
         expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
@@ -311,9 +321,9 @@ describe('proxy#startProxyRequest', () => {
     });
   });
 
-  context('given html without lang param', () => {
+  context('given gzipped html response without lang param', () => {
     const reqObj = {
-      id: 3,
+      id: 4,
       href: 'http://localhost/path/to',
       protocol: 'http:',
       method: 'GET',
@@ -325,36 +335,92 @@ describe('proxy#startProxyRequest', () => {
       res: {
         statusCode: 200,
         statusMessage: 'OK',
-        headers: { 'content-type': 'text/html' }
+        headers: { 
+          'content-type': 'text/html',
+          'content-encoding': 'gzip',
+        }
       },
       body: doc
     };
     const res = new MockResponse();
-    const proxyRes = new MockIncomingMessage();
-    const agent = createFakeAgent(proxyRes, buffer);
+    const proxyRes = new MockIncomingMessage(200, 'OK', {
+      'content-type': 'text/html',
+      'content-encoding': 'gzip',
+    });
+    const agent = createFakeAgent(proxyRes, gzipped);
 
     before((done) => {
-      //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
       ResponseCache.del(reqObj, null).then(done());
     });
 
-    it('sends a request to the specified web server', (done) => {
+    it('returns the response received from a web server', (done) => {
       res.on('end', (chunk) => {
         expect(res.statusCode).to.be.equal(expected.res.statusCode);
         expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
         expect(res.headers).to.eql(expected.res.headers);
-        expect(res.data.toString()).to.be.equal(doc);
+        expect(zlib.gunzipSync(Buffer.concat(res.data)).toString()).to.be.equal(doc);
         const expected2 = { ...expected };
-        expected2.res.headers['content-length'] = doc.length;
+        expected2.res.headers['content-length'] = gzipped.length;
         checkCache(reqObj, null, expected2, done);
       });
 
       proxy.startProxyRequest(res, agent, reqObj);
     });
   });
+
+  context('given gzipped html response with lang param', () => {
+    const reqObj = {
+      id: 5,
+      lang: 'ja',
+      href: 'http://localhost/path/to?lang=ja',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: targetHttpPort,
+      path: '/path/to?lang=ja',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: {
+          'content-type': 'text/html',
+          'content-encoding': 'gzip',
+          'content-length': gzippedTranslatedDoc.length,
+          'access-control-allow-origin': 'localhost',
+          'set-cookie': [ 'SELECTEDLANG=ja' ]
+        }
+      },
+      body: translatedDoc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage(200, 'OK', {
+      'content-type': 'text/html',
+      'content-encoding': 'gzip',
+    });
+    const agent = createFakeAgent(proxyRes, gzipped);
+
+    before((done) => {
+      ResponseCache.del(reqObj, 'ja').then(done());
+    });
+
+    it('returns the response received from a web server', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(zlib.gunzipSync(Buffer.concat(res.data)).toString()).to.be.equal(translatedDoc);
+        checkCache(reqObj, 'ja', expected, done);
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+
 });
 
 //    const url = 'http://localhost:' + serverHttpPort;
+      //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
 
 //describe('proxy#serve', () => {
 //  const ResponseCache = createResponseCache(conf);
