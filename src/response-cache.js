@@ -13,7 +13,7 @@ const getFullUrl = (opts, lang) => {
   let url = opts.protocol + '//' + opts.host;
   if (opts.port) url += ':' + opts.port;
   url += opts.path;
-  if (lang) {
+  if (lang && !url.includes('lang=')) {
     if (url.includes('?')) {
       url += '&lang=' + lang;
     } else {

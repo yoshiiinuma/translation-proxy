@@ -1,14 +1,14 @@
 
-//import express from 'express';
 import http from 'http';
 import fs from 'fs';
 import util from 'util';
 import { expect } from 'chai';
-import nock from 'nock';
 import events from 'events';
-import { Writable } from 'stream';
 
-import httpMocks from 'node-mocks-http';
+//import express from 'express';
+//import { Writable } from 'stream';
+//import nock from 'nock';
+//import httpMocks from 'node-mocks-http';
 
 import { loadConfig } from '../src/conf.js';
 import Logger from '../src/logger.js';
@@ -44,6 +44,7 @@ let conf = loadConfig('./config/config.json', {
   "logLevel": "debug",
   "logDir": "./logs"
 });
+
 //const conf = {
 //  "cacheEnabled": true,
 //  "cacheSkip": ["do-not-cache-if-url-contains"],
@@ -65,6 +66,8 @@ let conf = loadConfig('./config/config.json', {
 //  "logDir": "./logs"
 //};
 //Logger.initialize(conf);
+
+const ResponseCache = createResponseCache(conf);
 
 const doc = `
   <html>
@@ -88,7 +91,6 @@ const translatedDoc = `
   </html>
 `;
 
-const buffer = Buffer.from(doc);
 const resHeader = {
   statusCode: 200,
   statusMessage: 'OK',
@@ -133,19 +135,9 @@ const reqObj3 = {
   path: '/',
 };
 
-const reqObj4 = {
-  id: 4,
-  href: 'http://spo.hawaii.gov',
-  protocol: 'http:',
-  method: 'GET',
-  //host: 'localhost',
-  hostname: 'spo.hawaii.gov',
-  port: serverHttpPort,
-  path: '/',
-};
-
 const translator = {
   translatePage: (html, lang, callback) => {
+    console.log('TRANSLATOR CALLED');
     callback(null, translatedDoc);
   }
 };
@@ -172,110 +164,192 @@ const proxyFunc = (res, agent, reqObj) => {
     });
 };
 
-
-nock('http://localhost:9998').get('/path/to').reply(200, doc);
-//nock('http://localhost:9998').get('/path/to').reply(404);
-
-const reqObj = reqObj1;
-
 class MockIncomingMessage extends events.EventEmitter {
-  constructor() {
+  constructor(statusCode, statusMessage, headers) {
     super();
-    console.log('MOCK INCOMING CONSTRUCTOR')
-    this.statusCode = 200;
-    this.statusMessage = 'OK';
-    this.headers = {
-      'content-type': 'text/html'
-    }
+    this._statusCode = (statusCode) ? statusCode : 200;
+    this._statusMessage = (statusMessage) ? statusMessage : 'OK';
+    this._headers = (headers) ? headers : { 'content-type': 'text/html' };
+    //this.statusCode = 200;
+    //this.statusMessage = 'OK';
+    //this.headers = {
+    //  'content-type': 'text/html'
+    //}
   }
-}
+
+  get statusCode() { return this._statusCode }
+  get statusMessage() { return this._statusMessage }
+  get headers() { return this._headers }
+};
 
 class MockClientRequest extends events.EventEmitter {
   constructor() {
     super();
-    console.log('MOCK ClientRequest CONSTRUCTOR')
   }
-}
+};
 
 class MockResponse extends events.EventEmitter {
   constructor(callback) {
     super();
-    console.log('MOCK RESPONSE CONSTRUCTOR')
     if (callback) this.callback = callback;
-    this.data = '';
+    this._data = [];
+    this._statusCode = null;
+    this._statusMessage = null;
+    this._headers = {};
   }
 
+  get statusCode() { return this._statusCode }
+  get statusMessage() { return this._statusMessage }
+  get headers() { return this._headers }
+  get data() { return this._data }
+
   writeHead(statusCode, statusMessage, headers) {
-    this.statusCode = statusCode;
-    this.statusMessage = statusMessage;
-    this.headers = this.headers;
+    console.log('MOCK RESPONSE WRITEHEAD CALLED');
+    console.log(headers);
+    this._statusCode = statusCode;
+    this._statusMessage = statusMessage;
+    this._headers = headers;
   }
 
   write(chunk) {
-    console.log('MOCK RESPONSE WRITE');
-    this.data += chunk;
+    console.log('MOCK RESPONSE WRITE CALLED');
+    this._data.push(chunk);
     this.emit('data', chunk);
   }
 
   end(chunk) {
-    console.log('MOCK RESPONSE END');
-    //if (chunk) this.emit('data', chunk);
+    console.log('MOCK RESPONSE END CALLED');
+    if (chunk) this._data.push(chunk);
     this.emit('end');
-    if (chunk) {
-      this._data += chunk;
-    }
     if (this.callback) this.callback();
   }
-}
+};
 
-const createFakeAgent = (res) => {
+const createFakeAgent = (res, data) => {
   return {
     request: (opts, callback) => {
       console.log('FAKE AGENT REQUEST CALLED');
       console.log(opts);
-      //const res = httpMocks.createResponse({
-      //  writableStream: Writable,
-      //  eventEmitter: events.EventEmitter
-      //});
       setTimeout(() => {
+        console.log('FAKE RESPONSE RETURNED');
         callback(res);
-      }, 100);
+      }, 5);
+      setTimeout(() => {
+        console.log('FAKE RESPONSE DATA STARTED');
+        res.emit('data', data);
+        res.emit('end');
+      }, 10);
       return new MockClientRequest();
     }
   }
-}
+};
+
+const checkCache = (reqObj, lang, expected, callback) => {
+  setTimeout(() => {
+    ResponseCache.get(reqObj, lang)
+      .then((cache) => {
+        //console.log('------------------------------------');
+        //console.log(cache.res.headers);
+        //console.log(expected.res.headers);
+        //console.log('------------------------------------');
+        expect(cache.res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(cache.res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(cache.res.headers).to.eql(expected.res.headers);
+        expect(cache.buffer.toString()).to.be.equal(expected.body);
+      })
+      .then(callback());
+  }, 5);
+};
 
 describe('proxy#startProxyRequest', () => {
   const proxy = setUpProxy(conf, translator);
-  let req;
-  let res1 = new MockResponse();
-  let res2 = new MockIncomingMessage();
+  const buffer = Buffer.from(doc);
 
-  //before((done) => {
-  //  done();
-  //  //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
-  //  //ResponseCache.del(reqObj, null).then(done());
-  //});
+  context('given html with lang param', () => {
+    const reqObj = {
+      id: 2,
+      lang: 'ja',
+      href: 'http://localhost/path/to?lang=ja',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: targetHttpPort,
+      path: '/path/to?lang=ja',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: {
+          'content-type': 'text/html',
+          'content-length': translatedDoc.length,
+          'access-control-allow-origin': 'localhost',
+          'set-cookie': [ 'SELECTEDLANG=ja' ]
+        }
+      },
+      body: translatedDoc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage();
+    const agent = createFakeAgent(proxyRes, buffer);
 
-  context('With cache', () => {
+    before((done) => {
+      //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
+      ResponseCache.del(reqObj, 'ja').then(done());
+    });
+
     it('sends a request to the specified web server', (done) => {
-      const agent = createFakeAgent(res2, () => {
-        console.log('FAKE AGENT CALLBACK REPONSE END ')
-      });
-      res1.on('data', (chunk) => {
-        console.log('MOCK RESPONSE DATA: ' + chunk);
-      });
-
-      res1.on('end', (chunk) => {
-        console.log('MOCK RESPONSE END');
-        done();
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(res.data.toString()).to.be.equal(expected.body);
+        checkCache(reqObj, 'ja', expected, done);
       });
 
-      proxy.startProxyRequest(res1, agent, reqObj2);
-      setTimeout(() => {
-        res2.emit('data', doc);
-        res2.emit('end');
-      }, 500);      
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+
+  context('given html without lang param', () => {
+    const reqObj = {
+      id: 3,
+      href: 'http://localhost/path/to',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: targetHttpPort,
+      path: '/path/to',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: { 'content-type': 'text/html' }
+      },
+      body: doc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage();
+    const agent = createFakeAgent(proxyRes, buffer);
+
+    before((done) => {
+      //ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
+      ResponseCache.del(reqObj, null).then(done());
+    });
+
+    it('sends a request to the specified web server', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(res.data.toString()).to.be.equal(doc);
+        const expected2 = { ...expected };
+        expected2.res.headers['content-length'] = doc.length;
+        checkCache(reqObj, null, expected2, done);
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
     });
   });
 });
