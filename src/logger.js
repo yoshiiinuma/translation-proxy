@@ -71,6 +71,10 @@ Logger.setLogFile = (filePath) => {
   logFile = filePath;
 }
 
+Logger.setAccessLogFile = (filePath) => {
+  accessLogFile = filePath;
+}
+
 Logger.showStatus = () => {
   console.log(' Log Enabled: ' + logEnabled);
   console.log(' Log Level  : ' + Logger.convLevelToString(logLevel));
@@ -121,28 +125,29 @@ Logger.setLogLevel = (level) => {
 }
 
 /**
- * arg: { disableLog, logLevel, logDir, logFile, env }
- *   enableLog (optional)  : redirects outputs from stdout to file if true
- *   logLevel (optional)   : specifies the log level; default ERROR
- *   logDir (optional)     : specifies the directory to put log file; default '.logs'
- *   logFile (optional)    : path to the log file; ignore logDir if spcified
- *   env (optional)        : makes logFile = logDir + '/' + env + '.log' if specfied
+ * arg: { disableLog, logLevel, logDir, logFile }
+ *   enableLog (optional)     : redirects outputs from stdout to file if true
+ *   logLevel (optional)      : specifies the log level; default ERROR
+ *   logDir (optional)        : specifies the directory to put log file; default '.logs'
+ *   logFile (optional)       : path to the log file
+ *   accessLogFile (optional) : path to the access log file
  */
 Logger.initialize = (arg) => {
   if (arg.enableLog) Logger.enable();
   if (arg.logLevel) Logger.setLogLevel(arg.logLevel);
-  if (arg.logFile) {
-    Logger.setLogFile(arg.logFile);
-    fs.ensureFileSync(logFile);
-  } else if (arg.env) {
-    let dir = DEFAULT_LOG_DIR;
-    if (arg.logDir) {
-      dir = arg.logDir;
-    }
-    if (!dir.endsWith('/')) dir += '/';
-    Logger.setLogFile(dir + arg.env + '.log');
+  let dir = DEFAULT_LOG_DIR;
+  if (arg.logDir) {
+    dir = arg.logDir;
   }
-  fs.ensureFileSync(logFile);
+  if (!dir.endsWith('/')) dir += '/';
+  if (arg.logFile) {
+    Logger.setLogFile(dir + arg.logFile);
+    fs.ensureFileSync(logFile);
+  }
+  if (arg.accessLogFile) {
+    Logger.setAccessLogFile(dir + arg.accessLogFile);
+    fs.ensureFileSync(accessLogFile);
+  }
 }
 
 Logger.debug = (msg) => {

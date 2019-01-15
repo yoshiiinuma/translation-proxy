@@ -18,7 +18,7 @@ export const loadConfig = (file, updates) => {
   if (updates) {
     conf = { ...conf, ...updates };
   }
-  Logger.initialize(conf);
+  //Logger.initialize(conf);
   console.log(conf);
   return conf;
 };

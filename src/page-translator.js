@@ -6,6 +6,9 @@ import { createConnectionOption, callTranslateApi } from './translate.js';
 
 const DEFAULT_LIMIT = 5000;
 
+/**
+ * NOTE: Initialize Logger before calling this function
+ */
 export const createHtmlPageTranslator = (conf) => {
   const selectors = conf.translationSelectors;
   const maxTextPerRequest = conf.maxTextPerRequest;

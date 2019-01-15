@@ -7,6 +7,15 @@ import { expect } from 'chai';
 import { loadConfig } from '../src/conf.js';
 import getTranslator from '../src/translate.js';
 import { createPostData, replaceTexts } from '../src/translate.js';
+import Logger from '../src/logger.js';
+
+Logger.initialize({
+  "enableLog": true,
+  "logLevel": "debug",
+  "logDir": "./logs",
+  "logFile": "test.log",
+  "accessLogFile": "test-access.log",
+});
 
 const conf = {
   "translationSelectors": ["#header", "#main", "#footer"],

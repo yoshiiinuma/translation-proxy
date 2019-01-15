@@ -6,10 +6,19 @@ import { expect } from 'chai';
 import { loadPage } from '../src/page-translator.js';
 import { loadConfig } from '../src/conf.js';
 import { createConnectionOption, callTranslateApi } from '../src/translate.js';
+import Logger from '../src/logger.js';
 
 const conf = loadConfig('./config/config.json');
 const html1 = fs.readFileSync('./test/simple.html');
 const page = loadPage(html1, conf);
+
+Logger.initialize({
+  "enableLog": true,
+  "logLevel": "debug",
+  "logDir": "./logs",
+  "logFile": "test.log",
+  "accessLogFile": "test-access.log",
+});
 
 //describe('page-translator#showDomTree', () => {
 //  it('prints out dom tree structure', (done) => {

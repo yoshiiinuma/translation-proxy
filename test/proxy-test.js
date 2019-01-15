@@ -21,7 +21,7 @@ const serverHttpsPort = 9997;
 const targetHttpPort  = 9998;
 const targetHttpsPort = 9999;
 
-let conf = loadConfig('./config/config.json', {
+const conf = {
   "cacheEnabled": true,
   "cacheSkip": ["do-not-cache-if-url-contains"],
   "proxiedHosts": {
@@ -41,32 +41,15 @@ let conf = loadConfig('./config/config.json', {
   "sslCert": "./certs/test.pem",
   "sslKey": "./certs/test.key",
   "reidsPort": 6379,
+};
+
+Logger.initialize({
   "enableLog": true,
   "logLevel": "debug",
-  "logDir": "./logs"
+  "logDir": "./logs",
+  "logFile": "test.log",
+  "accessLogFile": "test-access.log",
 });
-
-//const conf = {
-//  "cacheEnabled": true,
-//  "cacheSkip": ["do-not-cache-if-url-contains"],
-//  "proxiedHosts": ["loccalhost"],
-//  "translationSelectors": ["#header", "#main", "#footer"],
-//  "maxTextPerRequest": 12000,
-//  "domBreakdownThreshold": 250,
-//  "keyPath": "/path/to/key.json",
-//  "gcloudPath": "/path/to/google-cloud-sdk/bin/gcloud",
-//  "serverHttpPort": serverHttpPort,
-//  "serverHttpsPort": serverHttpsPort,
-//  "targetHttpPort": targetHttpPort,
-//  "targetHttpsPort": targetHttpsPort,
-//  "sslCert": "./certs/test.pem",
-//  "sslKey": "./certs/test.key",
-//  "reidsPort": 6379,
-//  "enableLog": true,
-//  "logLevel": "debug",
-//  "logDir": "./logs"
-//};
-//Logger.initialize(conf);
 
 const ResponseCache = createResponseCache(conf);
 

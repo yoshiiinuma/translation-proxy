@@ -51,6 +51,9 @@ const injectAlert = (html) => {
   }
 }
 
+/**
+ * NOTE: Initialize Logger before calling this function
+ */
 export const setUpProxy = (conf, translator, proxyFunc, callback) => {
   let cnt = 0;
   const ResponseCache = createResponseCache(conf);
@@ -274,7 +277,6 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
           sendTranslation(res, buffer, reqObj, savedRes, logPrefix);
         }
       });
-
     });
 
     proxyReq.on('error', (e) => {
