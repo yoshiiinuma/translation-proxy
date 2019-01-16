@@ -49,7 +49,7 @@ const createResponseCache = (conf) => {
       if (!conf.cacheEnabled) return null;
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.debug(opts.id + ' CACHE GET: ' + opts.href);
+      Logger.debug(opts.id + ' CACHE GET: ' + getFullUrl(opts, lang));
       Logger.debug(opts.id + ' CACHE GET: ' + headKey);
       Logger.debug(opts.id + ' CACHE GET: ' + pageKey);
       const head = await cache.getAsync(getKey('HEAD-', opts, lang));
@@ -72,7 +72,7 @@ const createResponseCache = (conf) => {
       const hrefKey = getKey('HREF-', opts, lang)
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.debug(opts.id + ' CACHE SAVE: ' + opts.href);
+      Logger.debug(opts.id + ' CACHE SAVE: ' + getFullUrl(opts, lang));
       Logger.debug(opts.id + ' CACHE SAVE: ' + hrefKey);
       Logger.debug(opts.id + ' CACHE SAVE: ' + headKey);
       Logger.debug(opts.id + ' CACHE SAVE: ' + pageKey);
@@ -86,7 +86,7 @@ const createResponseCache = (conf) => {
       if (!conf.cacheEnabled) return false;
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
-      Logger.debug(opts.id + ' CACHE DEL: ' + opts.href);
+      Logger.debug(opts.id + ' CACHE DEL: ' + getFullUrl(opts, lang));
       Logger.debug(opts.id + ' CACHE DEL: ' + headKey);
       Logger.debug(opts.id + ' CACHE DEL: ' + pageKey);
       cache.delAsync(getKey('HEAD-', opts, lang));

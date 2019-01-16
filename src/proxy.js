@@ -171,6 +171,21 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
       return;
     }
 
+    res.on('error', (e) => {
+      Logger.error(logPreSer + 'ERROR');
+      serverError(e, res);
+    });
+
+    res.on('end', () => {
+      Logger.info(logPreSer + 'END');
+      if (callback) callback();
+    })
+
+    req.on('error', (e) => {
+      Logger.error(logPreCli + 'ERROR');
+      serverError(e, res);
+    });
+
     let proxyReq = null;
 
     if (obj.lang) {
@@ -205,21 +220,6 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
       Logger.info(logPreCli + 'END');
       if (proxyReq) proxyReq.end();
     });
-
-    req.on('error', (e) => {
-      Logger.error(logPreCli + 'ERROR');
-      serverError(e, res);
-    });
-
-    res.on('error', (e) => {
-      Logger.error(logPreSer + 'ERROR');
-      serverError(e, res);
-    });
-
-    res.on('end', () => {
-      Logger.info(logPreSer + 'END');
-      if (callback) callback();
-    })
   };
 
   const startProxyRequest = (res, agent, reqObj) => {
