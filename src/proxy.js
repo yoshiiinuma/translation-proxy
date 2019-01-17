@@ -12,7 +12,7 @@ import createResponseCache from './response-cache.js';
 
 export const notFound = (res) => {
   Logger.info('404 Not Found');
-  res.writeHead(404, 'text/plain');
+  res.writeHead(404, 'File Not Found', { 'content-type': 'text/plain' });
   res.end('Error 404: File Not Found');
 };
 
@@ -27,7 +27,7 @@ export const serviceUnavailable = (e, res) => {
   Logger.info('503 Service Unavailable');
   Logger.info(e);
   res.writeHead(503, 'Service Unavailable', { 'content-type': 'text/plain' });
-  res.end('Error 503: Service Unavailable Error');
+  res.end('Error 503: Service Unavailable');
 };
 
 export const badRequest = (e, res) => {
