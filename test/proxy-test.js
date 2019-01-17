@@ -6,7 +6,6 @@ import { expect } from 'chai';
 import events from 'events';
 import zlib from 'zlib';
 
-import { loadConfig } from '../src/conf.js';
 import Logger from '../src/logger.js';
 import createResponseCache from '../src/response-cache.js';
 import { setUpProxy, clientError } from '../src/proxy.js';
@@ -602,7 +601,7 @@ describe('proxy#startProxyRequest', () => {
         expect(res.statusCode).to.be.equal(503);
         expect(res.statusMessage).to.be.equal('Service Unavailable');
         expect(res.headers).to.eql(expectedHeaders);
-        expect(res.data.toString()).to.be.equal('Error 503: Service Unavailable Error');
+        expect(res.data.toString()).to.be.equal('Error 503: Service Unavailable');
         done();
       });
 
