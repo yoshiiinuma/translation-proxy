@@ -19,17 +19,24 @@ export const notFound = (res) => {
 export const serverError = (e, res) => {
   Logger.info('500 Server Error');
   Logger.info(e);
-  res.writeHead(500, 'text/plain');
+  res.writeHead(500, 'Internal Server Error', { 'content-type': 'text/plain' });
   res.end('Error 500: Internal Server Error');
 };
 
-export const clientError = (e, socket) => {
+export const badRequest = (e, res) => {
   Logger.info('400 Bad Request');
+  Logger.info(e);
+  res.writeHead(400, 'Bad Request', { 'content-type': 'text/plain' });
+  res.end('Error 400: Bad Request');
+};
+
+export const clientError = (e, socket) => {
+  Logger.info('CLIENT ERROR');
   if (e) {
     Logger.info(e);
     Logger.info(util.inspect(socket));
   }
-  socket.end('Error 400: Bad Request');
+  socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
 };
 
 const alertJs =
@@ -157,6 +164,7 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
     const logPreCli = id + ' CLIENT REQUEST ';
     const logPreSer = id + ' SERVER RESPONSE ';
     const agent = (req.connection.encrypted) ? https : http;
+    let error = false;
 
     const obj = reqToReqObj(req, id);
     Logger.access(obj);
@@ -165,13 +173,8 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
     Logger.info(logPreCli + 'START: ' + obj.href);
     Logger.debug(obj.rawHeaders);
 
-    if (!conf.proxiedHosts[obj.host]) {
-      Logger.debug(logPreCli + 'NOT PROXIED: ' + obj.href);
-      clientError(null, res);
-      return;
-    }
-
     res.on('error', (e) => {
+      error = true;
       Logger.error(logPreSer + 'ERROR');
       serverError(e, res);
     });
@@ -182,9 +185,17 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
     })
 
     req.on('error', (e) => {
+      error = true;
       Logger.error(logPreCli + 'ERROR');
       serverError(e, res);
     });
+
+    if (!conf.proxiedHosts[obj.host]) {
+      error = true;
+      Logger.debug(logPreCli + 'NOT PROXIED: ' + obj.href);
+      badRequest('Not Proxied: ' + obj.href, res);
+      return;
+    }
 
     let proxyReq = null;
 
@@ -192,7 +203,7 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
       const translated = await ResponseCache.get(obj, obj.lang);
       if (translated) {
         const savedRes = translated.res
-        sendBuffer(res, translated.buffer, savedRes, logPreSer + 'END: RETURNING CACHED TRANSLATED');
+        if (!error) sendBuffer(res, translated.buffer, savedRes, logPreSer + 'END: RETURNING CACHED TRANSLATED');
         return;
       }
     }
@@ -203,12 +214,12 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
       if (obj.lang) {
         savedRes.lang = obj.lang;
         savedRes.href = obj.href;
-        sendTranslation(res, original.buffer, obj, savedRes, logPreSer);
+        if (!error) sendTranslation(res, original.buffer, obj, savedRes, logPreSer);
       } else {
-        sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
+        if (!error) sendBuffer(res, original.buffer, savedRes, logPreSer + 'END: RETURNING CACHED ORIGIANL');
       }
     } else {
-      proxyReq = startProxy(res, agent, obj);
+      if (!error) proxyReq = startProxy(res, agent, obj);
     }
 
     req.on('data', (chunk) => {
