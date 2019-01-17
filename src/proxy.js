@@ -23,6 +23,13 @@ export const serverError = (e, res) => {
   res.end('Error 500: Internal Server Error');
 };
 
+export const serviceUnavailable = (e, res) => {
+  Logger.info('503 Service Unavailable');
+  Logger.info(e);
+  res.writeHead(503, 'Service Unavailable', { 'content-type': 'text/plain' });
+  res.end('Error 503: Service Unavailable Error');
+};
+
 export const badRequest = (e, res) => {
   Logger.info('400 Bad Request');
   Logger.info(e);
@@ -267,7 +274,7 @@ export const setUpProxy = (conf, translator, proxyFunc, callback) => {
 
       proxyRes.on('error', (e) => {
         Logger.error(logPrefix + 'ERROR');
-        serverError(e, res);
+        serviceUnavailable(e, res);
       });
 
       proxyRes.on('data', (chunk) => {

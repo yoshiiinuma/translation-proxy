@@ -165,6 +165,28 @@ const createFakeAgent = (res, data) => {
 };
 
 /**
+ * The returned function mocks node http/https.
+ * The function gets the given response to emit an error.
+ */
+const createFakeAgentEmitError = (res, data) => {
+  return {
+    request: (opts, callback) => {
+      if (debug) console.log('FAKE AGENT REQUEST CALLED');
+      if (debug) console.log(opts);
+      setTimeout(() => {
+        if (debug) console.log('FAKE RESPONSE RETURNED');
+        callback(res);
+      }, 5);
+      setTimeout(() => {
+        if (debug) console.log('FAKE RESPONSE EMIT ERROR');
+        res.emit('error', 'FAKE RESPONSE ERROR');
+      }, 10);
+      return new MockClientRequest();
+    }
+  }
+};
+
+/**
  * The returned function mocks startProxy function.
  * The function returns the specified response to the given response.
  */
@@ -550,192 +572,224 @@ describe('proxy#serve', () => {
   });
 });
 
-//describe('proxy#startProxyRequest', () => {
-//  const proxy = setUpProxy(conf, translator);
-//  const buffer = Buffer.from(doc);
-//  const gzipped = zlib.gzipSync(doc);
-//  const gzippedTranslatedDoc = zlib.gzipSync(translatedDoc);
-//
-//  context('given html response without lang param', () => {
-//    const reqObj = {
-//      id: 2,
-//      href: 'http://localhost/path/to',
-//      protocol: 'http:',
-//      method: 'GET',
-//      host: 'localhost',
-//      port: port,
-//      path: '/path/to',
-//    };
-//    const expected = {
-//      res: {
-//        statusCode: 200,
-//        statusMessage: 'OK',
-//        headers: { 'content-type': 'text/html' }
-//      },
-//      body: doc
-//    };
-//    const res = new MockResponse();
-//    const proxyRes = new MockIncomingMessage();
-//    const agent = createFakeAgent(proxyRes, buffer);
-//
-//    before((done) => {
-//      ResponseCache.del(reqObj, null).then(done());
-//    });
-//
-//    it('returns the response received from a web server', (done) => {
-//      res.on('end', (chunk) => {
-//        expect(res.statusCode).to.be.equal(expected.res.statusCode);
-//        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
-//        expect(res.headers).to.eql(expected.res.headers);
-//        expect(res.data.toString()).to.be.equal(doc);
-//        const expected2 = { ...expected };
-//        expected2.res.headers['content-length'] = doc.length;
-//        checkCache(reqObj, null, expected2, done);
-//      });
-//
-//      proxy.startProxyRequest(res, agent, reqObj);
-//    });
-//  });
-//
-//  context('given html response with lang param', () => {
-//    const reqObj = {
-//      id: 3,
-//      lang: 'ja',
-//      href: 'http://localhost/path/to?lang=ja',
-//      protocol: 'http:',
-//      method: 'GET',
-//      host: 'localhost',
-//      port: port,
-//      path: '/path/to?lang=ja',
-//    };
-//    const expected = {
-//      res: {
-//        statusCode: 200,
-//        statusMessage: 'OK',
-//        headers: {
-//          'content-type': 'text/html',
-//          'content-length': translatedDoc.length,
-//          'access-control-allow-origin': 'localhost',
-//          'set-cookie': [ 'SELECTEDLANG=ja' ]
-//        }
-//      },
-//      body: translatedDoc
-//    };
-//    const res = new MockResponse();
-//    const proxyRes = new MockIncomingMessage();
-//    const agent = createFakeAgent(proxyRes, buffer);
-//
-//    before((done) => {
-//      ResponseCache.del(reqObj, 'ja').then(done());
-//    });
-//
-//    it('returns the response received from a web server', (done) => {
-//      res.on('end', (chunk) => {
-//        expect(res.statusCode).to.be.equal(expected.res.statusCode);
-//        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
-//        expect(res.headers).to.eql(expected.res.headers);
-//        expect(res.data.toString()).to.be.equal(expected.body);
-//        checkCache(reqObj, 'ja', expected, done);
-//      });
-//
-//      proxy.startProxyRequest(res, agent, reqObj);
-//    });
-//  });
-//
-//  context('given gzipped html response without lang param', () => {
-//    const reqObj = {
-//      id: 4,
-//      href: 'http://localhost/path/to',
-//      protocol: 'http:',
-//      method: 'GET',
-//      host: 'localhost',
-//      port: port,
-//      path: '/path/to',
-//    };
-//    const expected = {
-//      res: {
-//        statusCode: 200,
-//        statusMessage: 'OK',
-//        headers: {
-//          'content-type': 'text/html',
-//          'content-encoding': 'gzip',
-//        }
-//      },
-//      body: doc
-//    };
-//    const res = new MockResponse();
-//    const proxyRes = new MockIncomingMessage(200, 'OK', {
-//      'content-type': 'text/html',
-//      'content-encoding': 'gzip',
-//    });
-//    const agent = createFakeAgent(proxyRes, gzipped);
-//
-//    before((done) => {
-//      ResponseCache.del(reqObj, null).then(done());
-//    });
-//
-//    it('returns the response received from a web server', (done) => {
-//      res.on('end', (chunk) => {
-//        expect(res.statusCode).to.be.equal(expected.res.statusCode);
-//        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
-//        expect(res.headers).to.eql(expected.res.headers);
-//        expect(zlib.gunzipSync(Buffer.concat(res.data)).toString()).to.be.equal(doc);
-//        const expected2 = { ...expected };
-//        expected2.res.headers['content-length'] = gzipped.length;
-//        checkCache(reqObj, null, expected2, done);
-//      });
-//
-//      proxy.startProxyRequest(res, agent, reqObj);
-//    });
-//  });
-//
-//  context('given gzipped html response with lang param', () => {
-//    const reqObj = {
-//      id: 5,
-//      lang: 'ja',
-//      href: 'http://localhost/path/to?lang=ja',
-//      protocol: 'http:',
-//      method: 'GET',
-//      host: 'localhost',
-//      port: port,
-//      path: '/path/to?lang=ja',
-//    };
-//    const expected = {
-//      res: {
-//        statusCode: 200,
-//        statusMessage: 'OK',
-//        headers: {
-//          'content-type': 'text/html',
-//          'content-encoding': 'gzip',
-//          'content-length': gzippedTranslatedDoc.length,
-//          'access-control-allow-origin': 'localhost',
-//          'set-cookie': [ 'SELECTEDLANG=ja' ]
-//        }
-//      },
-//      body: translatedDoc
-//    };
-//    const res = new MockResponse();
-//    const proxyRes = new MockIncomingMessage(200, 'OK', {
-//      'content-type': 'text/html',
-//      'content-encoding': 'gzip',
-//    });
-//    const agent = createFakeAgent(proxyRes, gzipped);
-//
-//    before((done) => {
-//      ResponseCache.del(reqObj, 'ja').then(done());
-//    });
-//
-//    it('returns the response received from a web server', (done) => {
-//      res.on('end', (chunk) => {
-//        expect(res.statusCode).to.be.equal(expected.res.statusCode);
-//        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
-//        expect(res.headers).to.eql(expected.res.headers);
-//        expect(zlib.gunzipSync(Buffer.concat(res.data)).toString()).to.be.equal(translatedDoc);
-//        checkCache(reqObj, 'ja', expected, done);
-//      });
-//
-//      proxy.startProxyRequest(res, agent, reqObj);
-//    });
-//  });
-//});
+describe('proxy#startProxyRequest', () => {
+  const proxy = setUpProxy(conf, translator);
+  const buffer = Buffer.from(doc);
+  const gzipped = zlib.gzipSync(doc);
+  const gzippedTranslatedDoc = zlib.gzipSync(translatedDoc);
+
+  context('when a response from a web server has a problem', () => {
+    const reqObj = {
+      id: 6,
+      href: 'http://localhost/path/to',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: port,
+      path: '/path/to',
+    };
+    const expectedHeaders = { 'content-type': 'text/plain' };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage();
+    const agent = createFakeAgentEmitError(proxyRes, buffer);
+
+    before((done) => {
+      ResponseCache.del(reqObj, null).then(done());
+    });
+
+    it('returns 503', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(503);
+        expect(res.statusMessage).to.be.equal('Service Unavailable');
+        expect(res.headers).to.eql(expectedHeaders);
+        expect(res.data.toString()).to.be.equal('Error 503: Service Unavailable Error');
+        done();
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+
+  context('when untranslated html page gets requested and the response is not gzipped', () => {
+    const reqObj = {
+      id: 2,
+      href: 'http://localhost/path/to',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: port,
+      path: '/path/to',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: { 'content-type': 'text/html' }
+      },
+      body: doc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage();
+    const agent = createFakeAgent(proxyRes, buffer);
+
+    before((done) => {
+      ResponseCache.del(reqObj, null).then(done());
+    });
+
+    it('returns the response received from a web server', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(res.data.toString()).to.be.equal(doc);
+        const expected2 = { ...expected };
+        expected2.res.headers['content-length'] = doc.length;
+        checkCache(reqObj, null, expected2, done);
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+
+  context('when translated html page gets requested and the response is not gzipped', () => {
+    const reqObj = {
+      id: 3,
+      lang: 'ja',
+      href: 'http://localhost/path/to?lang=ja',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: port,
+      path: '/path/to?lang=ja',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: {
+          'content-type': 'text/html',
+          'content-length': translatedDoc.length,
+          'access-control-allow-origin': 'localhost',
+          'set-cookie': [ 'SELECTEDLANG=ja' ]
+        }
+      },
+      body: translatedDoc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage();
+    const agent = createFakeAgent(proxyRes, buffer);
+
+    before((done) => {
+      ResponseCache.del(reqObj, 'ja').then(done());
+    });
+
+    it('returns the response received from a web server', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(res.data.toString()).to.be.equal(expected.body);
+        checkCache(reqObj, 'ja', expected, done);
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+
+  context('when untranslated html page gets requested and the response is gzipped', () => {
+    const reqObj = {
+      id: 4,
+      href: 'http://localhost/path/to',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: port,
+      path: '/path/to',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: {
+          'content-type': 'text/html',
+          'content-encoding': 'gzip',
+        }
+      },
+      body: doc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage(200, 'OK', {
+      'content-type': 'text/html',
+      'content-encoding': 'gzip',
+    });
+    const agent = createFakeAgent(proxyRes, gzipped);
+
+    before((done) => {
+      ResponseCache.del(reqObj, null).then(done());
+    });
+
+    it('returns the response received from a web server', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(zlib.gunzipSync(Buffer.concat(res.data)).toString()).to.be.equal(doc);
+        const expected2 = { ...expected };
+        expected2.res.headers['content-length'] = gzipped.length;
+        checkCache(reqObj, null, expected2, done);
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+
+  context('when translated html page gets requested and the response is gzipped', () => {
+    const reqObj = {
+      id: 5,
+      lang: 'ja',
+      href: 'http://localhost/path/to?lang=ja',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: port,
+      path: '/path/to?lang=ja',
+    };
+    const expected = {
+      res: {
+        statusCode: 200,
+        statusMessage: 'OK',
+        headers: {
+          'content-type': 'text/html',
+          'content-encoding': 'gzip',
+          'content-length': gzippedTranslatedDoc.length,
+          'access-control-allow-origin': 'localhost',
+          'set-cookie': [ 'SELECTEDLANG=ja' ]
+        }
+      },
+      body: translatedDoc
+    };
+    const res = new MockResponse();
+    const proxyRes = new MockIncomingMessage(200, 'OK', {
+      'content-type': 'text/html',
+      'content-encoding': 'gzip',
+    });
+    const agent = createFakeAgent(proxyRes, gzipped);
+
+    before((done) => {
+      ResponseCache.del(reqObj, 'ja').then(done());
+    });
+
+    it('returns the response received from a web server', (done) => {
+      res.on('end', (chunk) => {
+        expect(res.statusCode).to.be.equal(expected.res.statusCode);
+        expect(res.statusMessage).to.be.equal(expected.res.statusMessage);
+        expect(res.headers).to.eql(expected.res.headers);
+        expect(zlib.gunzipSync(Buffer.concat(res.data)).toString()).to.be.equal(translatedDoc);
+        checkCache(reqObj, 'ja', expected, done);
+      });
+
+      proxy.startProxyRequest(res, agent, reqObj);
+    });
+  });
+});
 
