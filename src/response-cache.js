@@ -1,7 +1,6 @@
 
 import crypto from 'crypto';
 
-import { loadConfig } from './conf.js';
 import Logger from './logger.js';
 import createCache from './cache.js';
 
@@ -41,10 +40,40 @@ const setCache = async (opts, lang, val) => {
   return await cache.setAsync(getKey('PAGE-', opts, lang), val);
 }
 
+const DEFAULT_EXPIRE_IN_SECS = 300;
+
+const createTtlRules = (conf) => {
+  let r = { rules: [], defaultTtl: DEFAULT_EXPIRE_IN_SECS };
+
+  if (conf.cacheTTL) {
+    for (let { type, ttl } of conf.cacheTTL) {
+      if (type === 'default') {
+        r.defaultTtl = ttl;
+      } else {
+        r.rules.push({ regex: new RegExp(type), ttl });
+      }
+    }
+  }
+
+  return r;
+}
+
 const createResponseCache = (conf) => {
   const cache = createCache(conf);
+  const ttlRules = createTtlRules(conf);
+  const getTtl = (type) => {
+      for (let { regex, ttl } of ttlRules.rules) {
+        if (regex.test(type)) {
+          return ttl;
+        }
+      }
+      return ttlRules.defaultTtl;
+  };
 
   const ResponseCache = {
+    ttlRules: ttlRules,
+    getTtl: getTtl,
+
     get: async (opts, lang) => {
       if (!conf.cacheEnabled) return null;
       const headKey = getKey('HEAD-', opts, lang)
@@ -69,6 +98,7 @@ const createResponseCache = (conf) => {
           return false;
         }
       }
+      const expInSecs = getTtl(resObj.headers['content-type']);
       const hrefKey = getKey('HREF-', opts, lang)
       const headKey = getKey('HEAD-', opts, lang)
       const pageKey = getKey('PAGE-', opts, lang)
@@ -76,9 +106,9 @@ const createResponseCache = (conf) => {
       Logger.debug(opts.id + ' CACHE SAVE: ' + hrefKey);
       Logger.debug(opts.id + ' CACHE SAVE: ' + headKey);
       Logger.debug(opts.id + ' CACHE SAVE: ' + pageKey);
-      await cache.setAsync(hrefKey, resObj.href);
-      await cache.setAsync(headKey, JSON.stringify(resObj));
-      await cache.setAsync(pageKey, body);
+      await cache.setAsync(hrefKey, resObj.href, expInSecs);
+      await cache.setAsync(headKey, JSON.stringify(resObj), expInSecs);
+      await cache.setAsync(pageKey, body, expInSecs);
       return true;
     },
 

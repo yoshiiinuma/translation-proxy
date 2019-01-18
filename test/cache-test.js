@@ -1,13 +1,13 @@
 
 import { expect } from 'chai';
-
 import createCache from '../src/cache.js';
+
+const expInSecs = 10;
 
 describe('cache#getAsync', () => {
   const cache = createCache({ db: 9 });
   const key = 'TEST';
   const val = 'Testing cache now';
-
 
   context('without setting a value', () => {
     before((done) => {
@@ -27,7 +27,7 @@ describe('cache#getAsync', () => {
 
   context('after setting a value', () => {
     before((done) => {
-      cache.setAsync(key, val)
+      cache.setAsync(key, val, expInSecs)
         .then(() => done());
     });
 
@@ -59,7 +59,7 @@ describe('cache#getAsync', () => {
 
   context('using await', () => {
     before(async () => {
-      await cache.setAsync(key, val);
+      await cache.setAsync(key, val, expInSecs);
     });
 
     after(async () => {
@@ -94,7 +94,7 @@ describe('cache#get', () => {
 
   context('after setting a value', () => {
     before((done) => {
-      cache.set(key, val, () => done());
+      cache.set(key, val, expInSecs, () => done());
     });
 
     after((done) => {

@@ -1,15 +1,18 @@
 
 import redis from 'redis';
 
+import Logger from './logger.js';
+
 export default (opt) => {
 
-  const expire = opt.cacheExpire || 300;
+  const DEFAULT_EXPIRE_IN_SECS = 300;
 
   const client = redis.createClient({
-    host: opt.host || '127.0.0.1',
-    port: opt.port || 6379,
-    db: opt.db || 0,
-    return_buffers: true
+    host: opt.redisHost || '127.0.0.1',
+    port: opt.redisPort || 6379,
+    return_buffers: true,
+    //db: opt.redisDb || 0,
+    //no_ready_check: true
   });
 
   const getAsync = (key) => {
@@ -25,7 +28,8 @@ export default (opt) => {
     });
   };
 
-  const setAsync = (key, val) => {
+  const setAsync = (key, val, expInSecs) => {
+    const expire = expInSecs || DEFAULT_EXPIRE_IN_SECS;
     return new Promise((resolve, reject) => {
       client.set(key, val, 'EX', expire, (err) => {
         if (err) {
@@ -62,7 +66,8 @@ export default (opt) => {
     });
   };
 
-  const set = (key, val, callback) => {
+  const set = (key, val, expInSecs, callback) => {
+    const expire = expInSecs || DEFAULT_EXPIRE_IN_SECS;
     client.set(key, val, 'EX', expire, (err) => {
       if (err) {
         Logger.debug('CACHE SET ERROR');
