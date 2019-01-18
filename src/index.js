@@ -5,8 +5,9 @@ import https from 'https';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
-import { setUpProxy, clientError } from './proxy.js';
+import { setUpProxy } from './proxy.js';
 import { createHtmlPageTranslator } from './page-translator.js';
+import { clientError } from './error-handler.js';
 
 const setUncaughtExceptionHandler = () => {
   process.on('uncaughtException', (err) => {

@@ -9,42 +9,7 @@ import cheerio from 'cheerio';
 import Logger from './logger.js';
 import { compress, uncompress, compressAsync, uncompressAsync } from './compress.js';
 import createResponseCache from './response-cache.js';
-
-export const notFound = (res) => {
-  Logger.info('404 Not Found');
-  res.writeHead(404, 'File Not Found', { 'content-type': 'text/plain' });
-  res.end('Error 404: File Not Found');
-};
-
-export const serverError = (e, res) => {
-  Logger.info('500 Server Error');
-  Logger.info(e);
-  res.writeHead(500, 'Internal Server Error', { 'content-type': 'text/plain' });
-  res.end('Error 500: Internal Server Error');
-};
-
-export const serviceUnavailable = (e, res) => {
-  Logger.info('503 Service Unavailable');
-  Logger.info(e);
-  res.writeHead(503, 'Service Unavailable', { 'content-type': 'text/plain' });
-  res.end('Error 503: Service Unavailable');
-};
-
-export const badRequest = (e, res) => {
-  Logger.info('400 Bad Request');
-  Logger.info(e);
-  res.writeHead(400, 'Bad Request', { 'content-type': 'text/plain' });
-  res.end('Error 400: Bad Request');
-};
-
-export const clientError = (e, socket) => {
-  Logger.info('CLIENT ERROR');
-  if (e) {
-    Logger.info(e);
-    Logger.info(util.inspect(socket));
-  }
-  socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-};
+import { serverError, serviceUnavailable, badRequest } from './error-handler.js';
 
 const alertJs =
 `<script>
