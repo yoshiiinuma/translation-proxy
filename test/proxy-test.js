@@ -79,7 +79,7 @@ class MockIncomingMessage extends events.EventEmitter {
   get headers() { return this._headers }
 };
 
-const rgxUrl = /(https?):\/\/([^\/]+)(\/.+)?$/;
+//const rgxUrl = /(https?):\/\/([^\/]+)(\/.+)?$/;
 
 class MockClientRequest extends events.EventEmitter {
   constructor(reqObj, headers) {

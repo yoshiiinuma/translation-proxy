@@ -4,8 +4,6 @@
   "description": "The proxy server translates the contents from the origin by using Google Cloud Translation API",
   "main": "dist/index.js",
   "scripts": {
-    "testserv": "babel-node src/test-server.js",
-    "testserv2": "babel-node src/test-server2.js",
     "exec": "babel-node src/index.js",
     "serv": "babel-node src/index.js",
     "build": "babel src --out-dir dist -s",
@@ -13,6 +11,7 @@
     "watch": "webpack --watch --mode development",
     "webpack-build": "webpack src/proxy.js --mode development",
     "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/proxy-test.js' --exit",
+    "unit2": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/request-handler-test.js' --exit",
     "test": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/**/*.{js,es6}' --exit"
   },
   "babel": {
