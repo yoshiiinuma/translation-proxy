@@ -2,7 +2,7 @@
 import Logger from './logger.js';
 import { notImplemented, serverError } from './error-handler.js';
 
-export const createRequestHandler = () => {
+export const setUpRequestHandler = () => {
   const RequestHandler = {};
   const middleware = [];
 

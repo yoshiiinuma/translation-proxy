@@ -2,7 +2,7 @@
 import { expect } from 'chai';
 import events from 'events';
 
-import { createRequestHandler } from '../src/request-handler.js';
+import { setUpRequestHandler } from '../src/request-handler.js';
 
 const debug = false;
 
@@ -74,7 +74,7 @@ const createLastware = (name) => {
 
 describe('RequestHandler#serve', () => {
   context('given no middleware', () => {
-    const RequestHandler = createRequestHandler();
+    const RequestHandler = setUpRequestHandler();
     const req = {};
 
     it('returns 501', () => {
@@ -89,7 +89,7 @@ describe('RequestHandler#serve', () => {
   });
 
   context('given multiple middleware', () => {
-    const RequestHandler = createRequestHandler();
+    const RequestHandler = setUpRequestHandler();
     const middle1 = createMiddleware('middle1');
     const middle2 = createMiddleware('middle2');
     const middle3 = createMiddleware('middle3');
@@ -119,7 +119,7 @@ describe('RequestHandler#serve', () => {
   });
 
   context('when middleware throws an error', () => {
-    const RequestHandler = createRequestHandler();
+    const RequestHandler = setUpRequestHandler();
     const middle1 = createMiddleware('middle1');
     const middle2 = createMiddleware('middle2');
     const middle3 = createMiddleware('middle3');

@@ -5,13 +5,15 @@ import https from 'https';
 
 import Logger from './logger.js';
 import { loadConfig } from './conf.js';
-//import { setUpProxy } from './proxy.js';
-//import { createHtmlPageTranslator } from './page-translator.js';
-import { createRequestHandler } from './request-handler.js';
 import { clientError } from './error-handler.js';
+import AgentSelector from './agent-selector.js';
+import createResponseCache from './response-cache.js';
+import { setUpRequestHandler } from './request-handler.js';
+import { setUpResponseHandler } from './response-handler.js';
 import { setUpPreprocessor } from './middle-preprocess.js';
-import MiddleCache from './middle-cache.js';
-import { setTranslator } from './response-handler.js';
+import { setUpMiddleFirewall } from './middle-firewall.js';
+import { setUpMiddleCache } from './middle-cache.js';
+import { setUpMiddleProxy } from './middle-proxy.js';
 
 const setUncaughtExceptionHandler = () => {
   process.on('uncaughtException', (err) => {
@@ -29,6 +31,8 @@ const setUncaughtExceptionHandler = () => {
   });
 };
 
+setUncaughtExceptionHandler();
+
 const conf = loadConfig('./config/config.json');
 
 Logger.initialize(conf);
@@ -39,13 +43,19 @@ const certs = {
 };
 
 const translator = createHtmlPageTranslator(conf);
-//const proxy = setUpProxy(conf, translator);
+const ResponseCache = createResponseCache(conf);
 
-const RequestHandler = createRequestHandler();
+const RequestHandler = setUpRequestHandler();
+const ResponseHandler = setUpResponseHandler(translator);
 
-setTranslator(translator);
+const MiddleFirewall = setUpMiddleFirewall(conf);
+const MiddleCache = setUpMiddleCache(ResponseHandler);
+const MiddleProxy = setUpMiddleProxy(ResponseHandler, AgentSelector, ResponseCache);
+
 RequestHandler.use(setUpPreprocessor(conf));
+RequestHandler.use(MiddleFirewall);
 RequestHandler.use(MiddleCache);
+RequestHandler.use(MiddleProxy);
 
 const httpServer = http.createServer(RequestHandler.serve);
 const httpsServer = https.createServer(certs, RequestHandler.serve);
@@ -57,4 +67,4 @@ httpsServer.on('clientError', clientError);
 
 httpServer.listen(serverHttpPort, '0.0.0.0');
 httpsServer.listen(serverHttpsPort, '0.0.0.0');
-
+j
