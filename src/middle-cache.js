@@ -1,11 +1,12 @@
 
 import createResponseCache from './response-cache.js';
 
-export setUpMiddleCache = (responseHandler) => {
+export setUpMiddleCache = (responseHandler, cacheHandler) => {
   const ResponseHandler = responseHandler;
+  const ResponseCache = cacheHandler;
 
   return (req, res, next) => {
-    const ResponseCache = createResponseCache(res.locals.conf);
+    //const ResponseCache = createResponseCache(res.locals.conf);
     const obj = res.locals.reqObj;
     const logPrefix = obj.id + ' SERVER RESPONSE ';
 

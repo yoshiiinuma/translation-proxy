@@ -48,11 +48,12 @@ const ResponseCache = createResponseCache(conf);
 const RequestHandler = setUpRequestHandler();
 const ResponseHandler = setUpResponseHandler(translator);
 
+const MiddlePreprocessor = setUpPreprocessor(conf);
 const MiddleFirewall = setUpMiddleFirewall(conf);
-const MiddleCache = setUpMiddleCache(ResponseHandler);
+const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 const MiddleProxy = setUpMiddleProxy(ResponseHandler, AgentSelector, ResponseCache);
 
-RequestHandler.use(setUpPreprocessor(conf));
+RequestHandler.use(MiddlePreprocessor);
 RequestHandler.use(MiddleFirewall);
 RequestHandler.use(MiddleCache);
 RequestHandler.use(MiddleProxy);
