@@ -11,7 +11,6 @@ export const setUpMiddleCache = (responseHandler, cacheHandler) => {
       serverError('REQOBJ NOT PROVIDED', res);
       return;
     }
-    //const ResponseCache = createResponseCache(res.locals.conf);
     const obj = res.locals.reqObj;
     const logPrefix = obj.id + ' SERVER RESPONSE ';
 
@@ -32,7 +31,7 @@ export const setUpMiddleCache = (responseHandler, cacheHandler) => {
         savedRes.href = obj.href;
         ResponseHandler.sendTranslation(res, original.buffer, obj, savedRes, logPrefix);
       } else {
-        ResponseHandler.sendBuffer(res, original.buffer, savedRes, logPrefix + 'END: RETURNING CACHED ORIGIANL');
+        ResponseHandler.sendBuffer(res, original.buffer, savedRes, logPrefix + 'END: RETURNING CACHED ORIGINAL');
       }
     } else {
       next();

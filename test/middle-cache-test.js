@@ -28,12 +28,43 @@ const conf = {
   "reidsPort": 6379,
 };
 
-const createNextFunc = () => {
+const createMockSendBuffer = () => {
   const r = { isCalled: false };
 
-  r.next = () => {
-    if (debug) console.log('NEXT WAS CALLED');
+  r.func = (res, buffer, headers, msg) => {
     r.isCalled = true;
+    r.res = res;
+    r.buffer = buffer;
+    r.headers = headers;
+    r.msg = msg;
+    res.end();
+  };
+
+  return r;
+};
+
+const createMockSendTranslation = () => {
+  const r = { isCalled: false };
+
+  r.func = (res, buffer, reqObj, headers, msg) => {
+    r.isCalled = true;
+    r.res = res;
+    r.buffer = buffer;
+    r.reqObj = reqObj;
+    r.headers = headers;
+    r.msg = msg;
+    res.end();
+  };
+
+  return r;
+};
+
+const createNextFunc = (callback) => {
+  const r = { isCalled: false };
+
+  r.func = () => {
+    r.isCalled = true;
+    callback();
   };
 
   return r;
@@ -45,8 +76,6 @@ const gzippedTranslatedDoc = zlib.gzipSync(TestHelper.translatedDoc);
 
 const ResponseCache = createResponseCache(conf);
 
-const ResponseHandler = setUpResponseHandler(TestHelper.translator);
-const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
 describe('MiddleCache', () => {
   context('when translated cache exists and translation gets requested', () => {
@@ -56,6 +85,7 @@ describe('MiddleCache', () => {
       'content-length': gzippedTranslatedDoc.length,
     };
     const reqObj = {
+      id: '    12345',
       href: 'http://localhost/path/to?lang=ja',
       protocol: 'http:',
       method: 'GET',
@@ -72,8 +102,13 @@ describe('MiddleCache', () => {
       encoding: 'gzip',
       headers
     };
-    const res = new TestHelper.MockResponse(reqObj);
-    const req = new TestHelper.MockClientRequest(reqObj);
+    const sendBuffer = createMockSendBuffer();
+    const sendTranslation = createMockSendTranslation();
+    const ResponseHandler = {
+      sendBuffer: sendBuffer.func,
+      sendTranslation: sendTranslation.func
+    };
+    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
       ResponseCache.save(reqObj, 'ja', resHeader, gzippedTranslatedDoc)
@@ -82,6 +117,19 @@ describe('MiddleCache', () => {
     });
 
     it('calls ResponseHandler.sendBuffer', (done) => {
+      const next = createNextFunc();
+      const req = new TestHelper.MockClientRequest(reqObj);
+      const res = new TestHelper.MockResponse(reqObj, () => {
+        expect(sendTranslation.isCalled).to.be.equal(false);
+        expect(next.isCalled).to.be.equal(false);
+        expect(sendBuffer.isCalled).to.be.equal(true);
+        expect(sendBuffer.res).to.eql(res);
+        expect(sendBuffer.buffer).to.eql(gzippedTranslatedDoc);
+        expect(sendBuffer.headers).to.eql(resHeader);
+        expect(sendBuffer.msg).to.eql('    12345 SERVER RESPONSE END: RETURNING CACHED TRANSLATED');
+        done();
+      });
+      MiddleCache(req, res, next.func);
     });
   });
 
@@ -92,6 +140,7 @@ describe('MiddleCache', () => {
       'content-length': gzipped.length,
     };
     const reqObj = {
+      id: '    12345',
       href: 'http://localhost/path/to?lang=ja',
       protocol: 'http:',
       method: 'GET',
@@ -103,19 +152,18 @@ describe('MiddleCache', () => {
     const resHeader = {
       statusCode: 200,
       statusMessage: 'OK',
-      lang: null,
-      href: 'http://localhost/path/to',
+      lang: 'ja',
+      href: 'http://localhost/path/to?lang=ja',
       encoding: 'gzip',
       headers
     };
-    const res = new TestHelper.MockResponse(reqObj);
-    const req = new TestHelper.MockClientRequest(reqObj);
-    const expectedHeaders = {
-      'content-type': 'text/html',
-      'content-encoding': 'gzip',
-      'content-length': gzippedTranslatedDoc.length,
-      'set-cookie': [ 'SELECTEDLANG=ja' ]
+    const sendBuffer = createMockSendBuffer();
+    const sendTranslation = createMockSendTranslation();
+    const ResponseHandler = {
+      sendBuffer: sendBuffer.func,
+      sendTranslation: sendTranslation.func
     };
+    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
       ResponseCache.save(reqObj, null, resHeader, gzipped)
@@ -124,6 +172,20 @@ describe('MiddleCache', () => {
     });
 
     it('calls ResponseHandler.sendTranslation', (done) => {
+      const next = createNextFunc();
+      const req = new TestHelper.MockClientRequest(reqObj);
+      const res = new TestHelper.MockResponse(reqObj, () => {
+        expect(sendBuffer.isCalled).to.be.equal(false);
+        expect(next.isCalled).to.be.equal(false);
+        expect(sendTranslation.isCalled).to.be.equal(true);
+        expect(sendTranslation.res).to.eql(res);
+        expect(sendTranslation.buffer).to.eql(gzipped);
+        expect(sendTranslation.reqObj).to.eql(reqObj);
+        expect(sendTranslation.headers).to.eql(resHeader);
+        expect(sendTranslation.msg).to.eql('    12345 SERVER RESPONSE ');
+        done();
+      });
+      MiddleCache(req, res, next.func);
     });
   });
 
@@ -133,6 +195,7 @@ describe('MiddleCache', () => {
       'content-length': buffer.length,
     };
     const reqObj = {
+      id: '    12345',
       href: 'http://localhost/path/to',
       protocol: 'http:',
       method: 'GET',
@@ -148,14 +211,32 @@ describe('MiddleCache', () => {
       encoding: null,
       headers
     };
-    const res = new TestHelper.MockResponse();
-    const req = new TestHelper.MockClientRequest(reqObj);
+    const sendBuffer = createMockSendBuffer();
+    const sendTranslation = createMockSendTranslation();
+    const ResponseHandler = {
+      sendBuffer: sendBuffer.func,
+      sendTranslation: sendTranslation.func
+    };
+    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
       ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
     });
 
     it('calls ResponseHandler.sendBuffer', (done) => {
+      const next = createNextFunc();
+      const req = new TestHelper.MockClientRequest(reqObj);
+      const res = new TestHelper.MockResponse(reqObj, () => {
+        expect(next.isCalled).to.be.equal(false);
+        expect(sendTranslation.isCalled).to.be.equal(false);
+        expect(sendBuffer.isCalled).to.be.equal(true);
+        expect(sendBuffer.res).to.eql(res);
+        expect(sendBuffer.buffer.toString()).to.eql(buffer.toString());
+        expect(sendBuffer.headers).to.eql(resHeader);
+        expect(sendBuffer.msg).to.be.equal('    12345 SERVER RESPONSE END: RETURNING CACHED ORIGINAL');
+        done();
+      });
+      MiddleCache(req, res, next.func);
     });
   });
 
@@ -169,14 +250,28 @@ describe('MiddleCache', () => {
       path: '/path/to',
     };
     const headers = { 'content-type': 'text/html' };
-    const res = new TestHelper.MockResponse();
-    const req = new TestHelper.MockClientRequest(reqObj);
+    const sendBuffer = createMockSendBuffer();
+    const sendTranslation = createMockSendTranslation();
+    const ResponseHandler = {
+      sendBuffer: sendBuffer.func,
+      sendTranslation: sendTranslation.func
+    };
+    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
       ResponseCache.del(reqObj, null).then(done());
     });
 
     it('calls next', (done) => {
+      const req = new TestHelper.MockClientRequest(reqObj);
+      const res = new TestHelper.MockResponse(reqObj);
+      const next = createNextFunc(() => {
+        expect(sendBuffer.isCalled).to.be.equal(false);
+        expect(sendTranslation.isCalled).to.be.equal(false);
+        expect(next.isCalled).to.be.equal(true);
+        done();
+      });
+      MiddleCache(req, res, next.func);
     });
   });
 });
