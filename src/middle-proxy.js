@@ -38,7 +38,7 @@ const logProxyResponse = (res, opts) => {
   Logger.debug(res.headers);
 };
 
-export setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) => {
+export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) => {
   const ResponseHandler = responseHandler;
   const AgentSelector = agentSelector;
   const ResponseCache = cacheHandler;

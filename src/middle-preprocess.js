@@ -1,6 +1,7 @@
 
 import requestIp from 'request-ip';
 import URL from 'url';
+import Logger from '../src/logger.js';
 
 const rgxHost = /^(.+):(\d+)$/;
 
@@ -67,7 +68,7 @@ export const setUpPreprocessor = (conf) => {
     const id = idOrig.toString().padStart(12, ' ');
     res.locals.reqObj = reqToReqObj(req, id);
     res.locals.conf = conf;
-    Logger.access(res.locals.resObj);
+    Logger.access(res.locals.reqObj);
     next(); 
   };
 

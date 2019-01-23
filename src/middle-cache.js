@@ -1,11 +1,16 @@
 
 import createResponseCache from './response-cache.js';
+import { serverError, serviceUnavailable, badRequest } from './error-handler.js';
 
-export setUpMiddleCache = (responseHandler, cacheHandler) => {
+export const setUpMiddleCache = (responseHandler, cacheHandler) => {
   const ResponseHandler = responseHandler;
   const ResponseCache = cacheHandler;
 
-  return (req, res, next) => {
+  return async (req, res, next) => {
+    if (!res.locals || !res.locals.reqObj) {
+      serverError('REQOBJ NOT PROVIDED', res);
+      return;
+    }
     //const ResponseCache = createResponseCache(res.locals.conf);
     const obj = res.locals.reqObj;
     const logPrefix = obj.id + ' SERVER RESPONSE ';

@@ -23,7 +23,7 @@ const injectAlert = (html) => {
   }
 }
 
-export setUpResponseHandler = (translateFunc) => {
+export const setUpResponseHandler = (translateFunc) => {
   const ResponseHandler = {};
 
   const translator = translateFunc;

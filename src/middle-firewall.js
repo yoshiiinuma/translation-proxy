@@ -2,7 +2,7 @@
 import Logger from './logger.js';
 import { badRequest } from './error-handler.js';
 
-export setUpMiddleFirewall = (conf) => {
+export const setUpMiddleFirewall = (conf) => {
   const proxiedHosts = conf.proxiedHosts;
 
   return (req, res, next) => {
