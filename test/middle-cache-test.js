@@ -28,62 +28,48 @@ const conf = {
   "reidsPort": 6379,
 };
 
-const createMockSendBuffer = () => {
-  const r = { isCalled: false };
-
-  r.func = (res, buffer, headers, msg) => {
-    r.isCalled = true;
-    r.res = res;
-    r.buffer = buffer;
-    r.headers = headers;
-    r.msg = msg;
-    res.end();
-  };
-
-  return r;
-};
-
-const createMockSendTranslation = () => {
-  const r = { isCalled: false };
-
-  r.func = (res, buffer, reqObj, headers, msg) => {
-    r.isCalled = true;
-    r.res = res;
-    r.buffer = buffer;
-    r.reqObj = reqObj;
-    r.headers = headers;
-    r.msg = msg;
-    res.end();
-  };
-
-  return r;
-};
-
-const createNextFunc = (callback) => {
-  const r = { isCalled: false };
-
-  r.func = () => {
-    r.isCalled = true;
-    callback();
-  };
-
-  return r;
-};
-
 const buffer = Buffer.from(TestHelper.doc);
 const gzipped = zlib.gzipSync(TestHelper.doc);
 const gzippedTranslatedDoc = zlib.gzipSync(TestHelper.translatedDoc);
 
 const ResponseCache = createResponseCache(conf);
 
-
 describe('MiddleCache', () => {
-  context('when translated cache exists and translation gets requested', () => {
-    const headers = {
-      'content-type': 'text/html',
-      'content-encoding': 'gzip',
-      'content-length': gzippedTranslatedDoc.length,
+  context('reqObj is not provided', () => {
+    const reqObj = {
+      href: 'http://localhost/path/to',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: port,
+      path: '/path/to',
     };
+
+    it('returns 500', (done) => {
+      const sendBuffer = TestHelper.createMockSendBuffer();
+      const sendTranslation = TestHelper.createMockSendTranslation();
+      const ResponseHandler = {
+        sendBuffer: sendBuffer.func,
+        sendTranslation: sendTranslation.func
+      };
+      const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
+      const req = new TestHelper.MockClientRequest(reqObj);
+      const res = new TestHelper.MockResponse();
+      const next = TestHelper.createNextFunc();
+      res.on('end', () => {
+        expect(sendBuffer.isCalled).to.be.equal(false);
+        expect(sendTranslation.isCalled).to.be.equal(false);
+        expect(next.isCalled).to.be.equal(false);
+        expect(res.statusCode).to.be.equal(500);
+        expect(res.statusMessage).to.be.equal('Internal Server Error');
+        expect(res.data.toString()).to.be.equal('Error 500: Internal Server Error');
+        done();
+      });
+      MiddleCache(req, res, next.func);
+    });
+  });
+
+  context('when translated cache exists and translation gets requested', () => {
     const reqObj = {
       id: '    12345',
       href: 'http://localhost/path/to?lang=ja',
@@ -94,38 +80,43 @@ describe('MiddleCache', () => {
       path: '/path/to',
       lang: 'ja'
     };
-    const resHeader = {
+    const resObj = {
       statusCode: 200,
       statusMessage: 'OK',
       lang: 'ja',
-      href: 'http://localhost/path/to',
+      href: 'http://localhost/path/to?lang=ja',
       encoding: 'gzip',
-      headers
+      headers: {
+        'content-type': 'text/html',
+        'content-encoding': 'gzip',
+        'content-length': gzippedTranslatedDoc.length,
+      }
     };
-    const sendBuffer = createMockSendBuffer();
-    const sendTranslation = createMockSendTranslation();
-    const ResponseHandler = {
-      sendBuffer: sendBuffer.func,
-      sendTranslation: sendTranslation.func
-    };
-    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
-      ResponseCache.save(reqObj, 'ja', resHeader, gzippedTranslatedDoc)
+      ResponseCache.save(reqObj, 'ja', resObj, gzippedTranslatedDoc)
         .then(ResponseCache.del(reqObj, null))
         .then(done());
     });
 
-    it('calls ResponseHandler.sendBuffer', (done) => {
-      const next = createNextFunc();
+    it('calls ResponseHandler.sendBuffer with the cache', (done) => {
+      const next = TestHelper.createNextFunc();
+      const sendBuffer = TestHelper.createMockSendBuffer();
+      const sendTranslation = TestHelper.createMockSendTranslation();
+      const ResponseHandler = {
+        sendBuffer: sendBuffer.func,
+        sendTranslation: sendTranslation.func
+      };
+      const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
       const req = new TestHelper.MockClientRequest(reqObj);
-      const res = new TestHelper.MockResponse(reqObj, () => {
+      const res = new TestHelper.MockResponse(reqObj);
+      res.on('end', () => {
         expect(sendTranslation.isCalled).to.be.equal(false);
         expect(next.isCalled).to.be.equal(false);
         expect(sendBuffer.isCalled).to.be.equal(true);
         expect(sendBuffer.res).to.eql(res);
         expect(sendBuffer.buffer).to.eql(gzippedTranslatedDoc);
-        expect(sendBuffer.headers).to.eql(resHeader);
+        expect(sendBuffer.headers).to.eql(resObj);
         expect(sendBuffer.msg).to.eql('    12345 SERVER RESPONSE END: RETURNING CACHED TRANSLATED');
         done();
       });
@@ -149,7 +140,15 @@ describe('MiddleCache', () => {
       path: '/path/to',
       lang: 'ja'
     };
-    const resHeader = {
+    const resObj = {
+      statusCode: 200,
+      statusMessage: 'OK',
+      lang: null,
+      href: 'http://localhost/path/to',
+      encoding: 'gzip',
+      headers
+    };
+    const expHeader = {
       statusCode: 200,
       statusMessage: 'OK',
       lang: 'ja',
@@ -157,31 +156,32 @@ describe('MiddleCache', () => {
       encoding: 'gzip',
       headers
     };
-    const sendBuffer = createMockSendBuffer();
-    const sendTranslation = createMockSendTranslation();
-    const ResponseHandler = {
-      sendBuffer: sendBuffer.func,
-      sendTranslation: sendTranslation.func
-    };
-    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resHeader, gzipped)
+      ResponseCache.save(reqObj, null, resObj, gzipped)
         .then(ResponseCache.del(reqObj, 'ja'))
         .then(done());
     });
 
-    it('calls ResponseHandler.sendTranslation', (done) => {
-      const next = createNextFunc();
+    it('calls ResponseHandler.sendTranslation with the cache', (done) => {
+      const next = TestHelper.createNextFunc();
+      const sendBuffer = TestHelper.createMockSendBuffer();
+      const sendTranslation = TestHelper.createMockSendTranslation();
+      const ResponseHandler = {
+        sendBuffer: sendBuffer.func,
+        sendTranslation: sendTranslation.func
+      };
+      const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
       const req = new TestHelper.MockClientRequest(reqObj);
-      const res = new TestHelper.MockResponse(reqObj, () => {
+      const res = new TestHelper.MockResponse(reqObj);
+      res.on('end', () => {
         expect(sendBuffer.isCalled).to.be.equal(false);
         expect(next.isCalled).to.be.equal(false);
         expect(sendTranslation.isCalled).to.be.equal(true);
         expect(sendTranslation.res).to.eql(res);
         expect(sendTranslation.buffer).to.eql(gzipped);
         expect(sendTranslation.reqObj).to.eql(reqObj);
-        expect(sendTranslation.headers).to.eql(resHeader);
+        expect(sendTranslation.headers).to.eql(expHeader);
         expect(sendTranslation.msg).to.eql('    12345 SERVER RESPONSE ');
         done();
       });
@@ -190,10 +190,6 @@ describe('MiddleCache', () => {
   });
 
   context('when cache exists', () => {
-    const headers = {
-      'content-type': 'text/html',
-      'content-length': buffer.length,
-    };
     const reqObj = {
       id: '    12345',
       href: 'http://localhost/path/to',
@@ -203,36 +199,40 @@ describe('MiddleCache', () => {
       port: port,
       path: '/path/to',
     };
-    const resHeader = {
+    const resObj = {
       statusCode: 200,
       statusMessage: 'OK',
       lang: null,
       href: 'http://localhost/path/to',
       encoding: null,
-      headers
+      headers: {
+        'content-type': 'text/html',
+        'content-length': buffer.length,
+      }
     };
-    const sendBuffer = createMockSendBuffer();
-    const sendTranslation = createMockSendTranslation();
-    const ResponseHandler = {
-      sendBuffer: sendBuffer.func,
-      sendTranslation: sendTranslation.func
-    };
-    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
+      ResponseCache.save(reqObj, null, resObj, buffer).then(done());
     });
 
-    it('calls ResponseHandler.sendBuffer', (done) => {
-      const next = createNextFunc();
+    it('calls ResponseHandler.sendBuffer with the cache', (done) => {
+      const next = TestHelper.createNextFunc();
+      const sendBuffer = TestHelper.createMockSendBuffer();
+      const sendTranslation = TestHelper.createMockSendTranslation();
+      const ResponseHandler = {
+        sendBuffer: sendBuffer.func,
+        sendTranslation: sendTranslation.func
+      };
+      const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
       const req = new TestHelper.MockClientRequest(reqObj);
-      const res = new TestHelper.MockResponse(reqObj, () => {
+      const res = new TestHelper.MockResponse(reqObj);
+      res.on('end', () => {
         expect(next.isCalled).to.be.equal(false);
         expect(sendTranslation.isCalled).to.be.equal(false);
         expect(sendBuffer.isCalled).to.be.equal(true);
         expect(sendBuffer.res).to.eql(res);
         expect(sendBuffer.buffer.toString()).to.eql(buffer.toString());
-        expect(sendBuffer.headers).to.eql(resHeader);
+        expect(sendBuffer.headers).to.eql(resObj);
         expect(sendBuffer.msg).to.be.equal('    12345 SERVER RESPONSE END: RETURNING CACHED ORIGINAL');
         done();
       });
@@ -249,23 +249,22 @@ describe('MiddleCache', () => {
       port: port,
       path: '/path/to',
     };
-    const headers = { 'content-type': 'text/html' };
-    const sendBuffer = createMockSendBuffer();
-    const sendTranslation = createMockSendTranslation();
-    const ResponseHandler = {
-      sendBuffer: sendBuffer.func,
-      sendTranslation: sendTranslation.func
-    };
-    const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 
     before((done) => {
       ResponseCache.del(reqObj, null).then(done());
     });
 
     it('calls next', (done) => {
+      const sendBuffer = TestHelper.createMockSendBuffer();
+      const sendTranslation = TestHelper.createMockSendTranslation();
+      const ResponseHandler = {
+        sendBuffer: sendBuffer.func,
+        sendTranslation: sendTranslation.func
+      };
+      const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
       const req = new TestHelper.MockClientRequest(reqObj);
       const res = new TestHelper.MockResponse(reqObj);
-      const next = createNextFunc(() => {
+      const next = TestHelper.createNextFunc(() => {
         expect(sendBuffer.isCalled).to.be.equal(false);
         expect(sendTranslation.isCalled).to.be.equal(false);
         expect(next.isCalled).to.be.equal(true);

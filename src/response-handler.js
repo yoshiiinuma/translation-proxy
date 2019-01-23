@@ -23,10 +23,11 @@ const injectAlert = (html) => {
   }
 }
 
-export const setUpResponseHandler = (translateFunc) => {
+export const setUpResponseHandler = (translateFunc, cacheHandler) => {
   const ResponseHandler = {};
 
   const translator = translateFunc;
+  const ResponseCache = cacheHandler;
 
   ResponseHandler.sendBuffer = (res, buffer, proxyResObj, logPrefix) => {
     //console.log(logPrefix + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);

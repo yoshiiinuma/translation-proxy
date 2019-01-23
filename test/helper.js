@@ -57,6 +57,55 @@ export const translator = {
   }
 };
 
+export const errTranslator = {
+  translatePage: (html, lang, callback) => {
+    if (debug) console.log('ERROR TRANSLATOR CALLED');
+    callback('TEST TRANSLATION ERROR');
+  }
+};
+
+export const createMockSendBuffer = () => {
+  const r = { isCalled: false };
+
+  r.func = (res, buffer, headers, msg) => {
+    r.isCalled = true;
+    r.res = res;
+    r.buffer = buffer;
+    r.headers = headers;
+    r.msg = msg;
+    res.end();
+  };
+
+  return r;
+};
+
+export const createMockSendTranslation = () => {
+  const r = { isCalled: false };
+
+  r.func = (res, buffer, reqObj, headers, msg) => {
+    r.isCalled = true;
+    r.res = res;
+    r.buffer = buffer;
+    r.reqObj = reqObj;
+    r.headers = headers;
+    r.msg = msg;
+    res.end();
+  };
+
+  return r;
+};
+
+export const createNextFunc = (callback) => {
+  const r = { isCalled: false };
+
+  r.func = () => {
+    r.isCalled = true;
+    if (callback) callback();
+  };
+
+  return r;
+};
+
 export class MockIncomingMessage extends events.EventEmitter {
   constructor(statusCode, statusMessage, headers) {
     super();
@@ -93,9 +142,8 @@ export class MockClientRequest extends events.EventEmitter {
 };
 
 export class MockResponse extends events.EventEmitter {
-  constructor(reqObj, callback) {
+  constructor(reqObj) {
     super();
-    if (callback) this.callback = callback;
     this._data = [];
     this._statusCode = null;
     this._statusMessage = null;
@@ -128,7 +176,6 @@ export class MockResponse extends events.EventEmitter {
     if (debug) console.log('MOCK RESPONSE END CALLED');
     if (chunk) this._data.push(chunk);
     this.emit('end');
-    if (this.callback) this.callback();
   }
 };
 

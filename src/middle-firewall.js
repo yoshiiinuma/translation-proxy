@@ -1,11 +1,15 @@
 
 import Logger from './logger.js';
-import { badRequest } from './error-handler.js';
+import { serverError, badRequest } from './error-handler.js';
 
 export const setUpMiddleFirewall = (conf) => {
   const proxiedHosts = conf.proxiedHosts;
 
   return (req, res, next) => {
+    if (!res.locals || !res.locals.reqObj) {
+      serverError('REQOBJ NOT PROVIDED', res);
+      return;
+    }
     const reqObj = res.locals.reqObj;
 
     if (proxiedHosts[reqObj.host]) {

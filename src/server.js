@@ -42,11 +42,11 @@ const certs = {
   cert: fs.readFileSync(conf.sslCert),
 };
 
-const translator = createHtmlPageTranslator(conf);
+const Translator = createHtmlPageTranslator(conf);
 const ResponseCache = createResponseCache(conf);
 
 const RequestHandler = setUpRequestHandler();
-const ResponseHandler = setUpResponseHandler(translator);
+const ResponseHandler = setUpResponseHandler(Translator, ResponseCache);
 
 const MiddlePreprocessor = setUpPreprocessor(conf);
 const MiddleFirewall = setUpMiddleFirewall(conf);
