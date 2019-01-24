@@ -4,7 +4,7 @@ import cheerio from 'cheerio';
 import Logger from './logger.js';
 import { compressAsync, uncompressAsync } from './compress.js';
 
-const alertJs =
+export const alertJs =
 `<script>
   function displayAlert() { alert('Translation service is currently not available. Please try again later.') };
   setTimeout(displayAlert, 1000);
