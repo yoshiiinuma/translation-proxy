@@ -51,18 +51,18 @@ export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) =
 
     res.on('error', (e) => {
       error = true;
-      Logger.error(logPreSer + 'ERROR');
+      Logger.error(reqObj.id + ' SERVER RESPONSE ERROR');
       serverError(e, res);
     });
 
     res.on('end', () => {
-      Logger.info(logPreSer + 'END');
+      Logger.info(reqObj.id + ' SERVER RESPONSE END');
       if (callback) callback();
     })
 
     req.on('error', (e) => {
       error = true;
-      Logger.error(logPreCli + 'ERROR');
+      Logger.error(reqObj.id + ' CLIENT REQUEST ERROR');
       serverError(e, res);
     });
 
@@ -125,12 +125,12 @@ export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) =
     });
 
     req.on('data', (chunk) => {
-      Logger.debug(logPreCli + 'DATA');
+      Logger.debug(reqObj.id + ' CLIENT REQUEST DATA');
       proxyReq.write(chunk);
     });
 
     req.on('end', () => {
-      Logger.info(logPreCli + 'END');
+      Logger.info(reqObj.id + ' CLIENT REQUEST END');
       proxyReq.end();
     });
   };
