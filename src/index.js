@@ -29,6 +29,8 @@ const conf = loadConfig('./config/config.json');
 
 Logger.initialize(conf);
 
+setUncaughtExceptionHandler();
+
 const certs = {
   key: fs.readFileSync(conf.sslKey),
   cert: fs.readFileSync(conf.sslCert),

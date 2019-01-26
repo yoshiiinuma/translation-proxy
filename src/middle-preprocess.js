@@ -66,6 +66,7 @@ export const setUpPreprocessor = (conf) => {
   const preprocessor = (req, res, next) => {
     const idOrig = cnt++;
     const id = idOrig.toString().padStart(12, ' ');
+    if (!res.locals) res.locals = {};
     res.locals.reqObj = reqToReqObj(req, id);
     res.locals.conf = conf;
     Logger.access(res.locals.reqObj);

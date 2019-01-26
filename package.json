@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "exec": "babel-node src/index.js",
-    "serv": "babel-node src/index.js",
+    "serv": "babel-node src/server.js",
     "build": "babel src --out-dir dist -s",
     "server": "nodemon --watch dist",
     "watch": "webpack --watch --mode development",

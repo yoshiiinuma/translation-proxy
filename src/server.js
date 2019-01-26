@@ -8,6 +8,7 @@ import { loadConfig } from './conf.js';
 import { clientError } from './error-handler.js';
 import AgentSelector from './agent-selector.js';
 import createResponseCache from './response-cache.js';
+import { createHtmlPageTranslator } from './page-translator.js';
 import { setUpRequestHandler } from './request-handler.js';
 import { setUpResponseHandler } from './response-handler.js';
 import { setUpPreprocessor } from './middle-preprocess.js';
@@ -68,4 +69,4 @@ httpsServer.on('clientError', clientError);
 
 httpServer.listen(serverHttpPort, '0.0.0.0');
 httpsServer.listen(serverHttpsPort, '0.0.0.0');
-j
+
