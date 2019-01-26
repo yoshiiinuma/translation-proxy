@@ -4,15 +4,9 @@ import zlib from 'zlib';
 import * as TestHelper from './helper.js';
 
 import createResponseCache from '../src/response-cache.js';
-//import { setUpResponseHandler } from '../src/response-handler.js';
 import { setUpMiddleCache } from '../src/middle-cache.js';
 
 const port = 7777;
-//
-//const conf = {
-//  targetHttpPort: 8888,
-//  targetHttpsPort: 9999
-//}
 
 const conf = {
   "cacheEnabled": true,

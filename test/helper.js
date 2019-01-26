@@ -183,7 +183,7 @@ export class MockResponse extends events.EventEmitter {
  * The returned function mocks node http/https.
  * The function returns the specified response to the given response.
  */
-export const createFakeAgent = (res, data) => {
+export const createFakeAgent = (res, data, reqObj) => {
   return {
     request: (opts, callback) => {
       if (debug) console.log('FAKE AGENT REQUEST CALLED');
@@ -197,7 +197,7 @@ export const createFakeAgent = (res, data) => {
         res.emit('data', data);
         res.emit('end');
       }, 10);
-      return new MockClientRequest();
+      return new MockClientRequest(reqObj);
     }
   }
 };
@@ -206,7 +206,7 @@ export const createFakeAgent = (res, data) => {
  * The returned function mocks node http/https.
  * The function gets the given response to emit an error.
  */
-export const createFakeAgentEmitError = (res, data) => {
+export const createFakeAgentEmitResponseError = (res, data) => {
   return {
     request: (opts, callback) => {
       if (debug) console.log('FAKE AGENT REQUEST CALLED');
@@ -219,6 +219,47 @@ export const createFakeAgentEmitError = (res, data) => {
         if (debug) console.log('FAKE RESPONSE EMIT ERROR');
         res.emit('error', 'FAKE RESPONSE ERROR');
       }, 10);
+      return new MockClientRequest();
+    }
+  }
+};
+
+/**
+ * The returned function mocks node http/https.
+ * The function gets the given response to emit an error.
+ */
+export const createFakeAgentEmitRequestError = (res, data) => {
+  return {
+    request: (opts, callback) => {
+      const req = new MockClientRequest();
+      if (debug) console.log('FAKE AGENT REQUEST CALLED');
+      if (debug) console.log(opts);
+      setTimeout(() => {
+        if (debug) console.log('FAKE RESPONSE RETURNED');
+        callback(res);
+      }, 5);
+      setTimeout(() => {
+        if (debug) console.log('FAKE RESPONSE EMIT ERROR');
+        req.emit('error', 'FAKE REQUEST ERROR');
+      }, 10);
+      return req;
+    }
+  }
+};
+
+/**
+ * The returned function mocks node http/https.
+ * The function returns the specified response to the given response.
+ */
+export const createCallbackFakeAgent = (res, data, callback) => {
+  return {
+    request: (opts, callackNeverCalled) => {
+      if (debug) console.log('FAKE AGENT REQUEST CALLED');
+      if (debug) console.log(opts);
+      setTimeout(() => {
+        if (debug) console.log('FAKE RESPONSE RETURNED');
+        callback();
+      }, 1);
       return new MockClientRequest();
     }
   }

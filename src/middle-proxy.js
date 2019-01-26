@@ -38,7 +38,7 @@ const logProxyResponse = (res, opts) => {
   Logger.debug(res.headers);
 };
 
-export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) => {
+export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler, callback) => {
   const ResponseHandler = responseHandler;
   const AgentSelector = agentSelector;
   const ResponseCache = cacheHandler;
@@ -50,7 +50,6 @@ export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) =
     logProxyRequest(reqObj);
 
     res.on('error', (e) => {
-      error = true;
       Logger.error(reqObj.id + ' SERVER RESPONSE ERROR');
       serverError(e, res);
     });
@@ -61,7 +60,6 @@ export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) =
     })
 
     req.on('error', (e) => {
-      error = true;
       Logger.error(reqObj.id + ' CLIENT REQUEST ERROR');
       serverError(e, res);
     });
@@ -89,6 +87,8 @@ export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler) =
         encoding,
         headers
       };
+      Logger.debug('SAVED PROXY RES');
+      Logger.debug(savedRes);
       if (!(needTranslation)) {
         res.writeHead(proxyRes.statusCode, proxyRes.statusMessage, headers)
       }
