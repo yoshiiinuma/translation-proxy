@@ -4,6 +4,7 @@ import cheerio from 'cheerio';
 import Logger from './logger.js';
 import { createConnectionOption, callTranslateApi } from './translate.js';
 
+const DEFAULT_MAX_PAGESIZE = 50000;
 const DEFAULT_LIMIT = 5000;
 
 /**
@@ -49,8 +50,15 @@ export const loadPage = (html, conf) => {
    *
    */
   const translateAll = (selectors, lang, limit, threshold, callback) => {
+    const maxPageSize = conf.maxPageSize || DEFAULT_MAX_PAGESIZE;
     const all = sortOutBySize(selectors, limit, threshold);
     logSorted(all);
+    const total = totalComponentSize(all);
+    if (total > maxPageSize) {
+      Logger.info('TRANSLATE ALL TOO LARGE PAGE: ' + total);
+      callback({ error: 'Too Large Page' });
+      return;
+    }
 
     Logger.info('TRANSLATE ALL BLOCK SIZE: ' + all.length + ' Lang: ' + lang);
     createConnectionOption(conf)
@@ -115,6 +123,16 @@ export const loadPage = (html, conf) => {
     } else {
       return false;
     }
+  };
+
+  const totalComponentSize = (sorted) => {
+    //showSorted(sorted);
+    return sorted.reduce((total, components) => {
+      return total + components.reduce((subTotal, elm) => {
+        
+        return subTotal + elm.html().length;
+      }, 0);
+    }, 0);
   };
 
   const sortOutBySize = (selectors, limit, threshold) => {
@@ -280,6 +298,7 @@ export const loadPage = (html, conf) => {
     replaceTexts,
     select,
     hasText,
+    totalComponentSize,
     sortOutBySize,
     showSorted,
     showDomTree

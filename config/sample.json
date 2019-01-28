@@ -1,8 +1,7 @@
 {
   "cacheEnabled": true,
   "cacheSkip": ["do-not-cache-if-url-contains"],
-  "cacheTTL": {
-    [
+  "cacheTTL": [
       { "type": "text/html",       "ttl":  86400 },
       { "type": "text/css",        "ttl": 259200 },
       { "type": "text",            "ttl": 604800 },
@@ -10,10 +9,10 @@
       { "type": "application",     "ttl": 259200 },
       { "type": "image",           "ttl": 604800 },
       { "type": "default",         "ttl": 604800 }
-    ]
-  },
+  ],
   "proxiedHosts": ["your.domain.com"],
   "translationSelectors": ["#header", "#main", "#footer"],
+  "maxPageSize": 80000,
   "maxTextPerRequest": 12000,
   "domBreakdownThreshold": 250,
   "keyPath": "/path/to/key.json",
@@ -24,8 +23,8 @@
   "targetHttpsPort": 443,
   "sslCert": "./certs/test.pem",
   "sslKey": "./certs/test.key",
-  "reidsHost": "127.0.0.1",
-  "reidsPort": 6379,
+  "redisHost": "127.0.0.1",
+  "redisPort": 6379,
   "enableLog": true,
   "logLevel": "debug",
   "logDir": "./logs"

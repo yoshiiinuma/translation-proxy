@@ -12,7 +12,8 @@
     "webpack-build": "webpack src/proxy.js --mode development",
     "unit2": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/proxy-test.js' --exit",
     "unit3": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/request-handler-test.js' --exit",
-    "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/middle-proxy-test.js' --exit",
+    "unit4": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/middle-proxy-test.js' --exit",
+    "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/page-translator-test.js' --exit",
     "test": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/**/*.{js,es6}' --exit"
   },
   "babel": {
