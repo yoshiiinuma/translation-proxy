@@ -4,16 +4,26 @@ import cheerio from 'cheerio';
 import Logger from './logger.js';
 import { compressAsync, uncompressAsync } from './compress.js';
 
-export const alertJs =
+export const TranslationNotAvailable =
 `<script>
   function displayAlert() { alert('Translation service is currently not available. Please try again later.') };
   setTimeout(displayAlert, 1000);
 </script>`;
 
-const injectAlert = (html) => {
+export const TooLargePage =
+`<script>
+  function displayAlert() { alert('The requested page is too large to translate.') };
+  setTimeout(displayAlert, 1000);
+</script>`;
+
+const injectAlert = (html, err) => {
   try {
     const $ = cheerio.load(html);
-    $(alertJs).appendTo('body');
+    if (err.error && err.error === 'Too Large Page') {
+      $(TooLargePage).appendTo('body');
+    } else {
+      $(TranslationNotAvailable).appendTo('body');
+    }
     return $.html();
   }
   catch (err) {
@@ -46,7 +56,7 @@ export const setUpResponseHandler = (translateFunc, cacheHandler) => {
         Logger.error(logPrefix + 'TRANSLATION FAILED');
         Logger.error(err);
         pageType = 'ERROR INJECTED PAGE';
-        gzipped = await compressAsync(injectAlert(doc), proxyResObj.encoding);
+        gzipped = await compressAsync(injectAlert(doc, err), proxyResObj.encoding);
         proxyResObj.headers['content-length'] = gzipped.length;
       } else {
         gzipped = await compressAsync(translatedHtml, proxyResObj.encoding);

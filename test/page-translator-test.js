@@ -80,7 +80,10 @@ describe('page-translator#translateAll', () => {
 
     it('returns an error', (done) => {
       page.translateAll(['body'], 'ja', 400, 400, (err, rslt) => {
-        expect(err).to.eql({ error: 'Too Large Page' });
+        expect(err).to.eql({
+          error: 'Too Large Page',
+          size: 961
+        });
         done();
       });
     });

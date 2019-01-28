@@ -56,7 +56,7 @@ export const loadPage = (html, conf) => {
     const total = totalComponentSize(all);
     if (total > maxPageSize) {
       Logger.info('TRANSLATE ALL TOO LARGE PAGE: ' + total);
-      callback({ error: 'Too Large Page' });
+      callback({ error: 'Too Large Page', size: total });
       return;
     }
 
@@ -74,7 +74,8 @@ export const loadPage = (html, conf) => {
         Logger.info('TRANSLATE ALL: Done!!!');
         callback(null, $.html());
       })
-      .catch((err) => callback(err));
+      //.catch((err) => callback(err));
+      .catch((err) => callback({ error: 'API Error', details: err }));
   };
 
   const translatePortion = (components, lang, apiOpts, i) => {
