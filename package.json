@@ -7,9 +7,6 @@
     "exec": "babel-node src/index.js",
     "serv": "babel-node src/server.js",
     "build": "babel src --out-dir dist -s",
-    "server": "nodemon --watch dist",
-    "watch": "webpack --watch --mode development",
-    "webpack-build": "webpack src/proxy.js --mode development",
     "unit2": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/proxy-test.js' --exit",
     "unit3": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/request-handler-test.js' --exit",
     "unit4": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/middle-proxy-test.js' --exit",
@@ -43,6 +40,7 @@
     "@babel/plugin-transform-runtime": "^7.2.0",
     "@babel/preset-env": "^7.1.6",
     "@babel/register": "^7.0.0",
+    "@babel/runtime": "^7.2.0",
     "babel-loader": "^8.0.4",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
@@ -51,7 +49,6 @@
     "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {
-    "@babel/runtime": "^7.2.0",
     "cheerio": "^1.0.0-rc.2",
     "dateformat": "^3.0.3",
     "fs-extra": "^7.0.1",

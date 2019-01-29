@@ -1,7 +1,7 @@
 
 import requestIp from 'request-ip';
 import URL from 'url';
-import Logger from '../src/logger.js';
+import Logger from './logger.js';
 
 const rgxHost = /^(.+):(\d+)$/;
 
