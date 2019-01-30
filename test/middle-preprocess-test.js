@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import { MockResponse, MockClientRequest } from './helper.js';
 
 import { setUpPreprocessor } from '../src/middle-preprocess.js';
-//import { setUpMiddleCache } from '../src/middle-cache.js';
 
 const port = 7777;
 

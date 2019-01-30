@@ -13,6 +13,7 @@ import { setUpRequestHandler } from './request-handler.js';
 import { setUpResponseHandler } from './response-handler.js';
 import { setUpPreprocessor } from './middle-preprocess.js';
 import { setUpMiddleFirewall } from './middle-firewall.js';
+import { setUpMiddleCachePurger } from './middle-cache-purger.js';
 import { setUpMiddleCache } from './middle-cache.js';
 import { setUpMiddleProxy } from './middle-proxy.js';
 
@@ -51,11 +52,13 @@ const ResponseHandler = setUpResponseHandler(Translator, ResponseCache);
 
 const MiddlePreprocessor = setUpPreprocessor(conf);
 const MiddleFirewall = setUpMiddleFirewall(conf);
+const MiddleCachePurger = setUpMiddleCachePurger(ResponseCache);
 const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
 const MiddleProxy = setUpMiddleProxy(ResponseHandler, AgentSelector, ResponseCache);
 
 RequestHandler.use(MiddlePreprocessor);
 RequestHandler.use(MiddleFirewall);
+RequestHandler.use(MiddleCachePurger);
 RequestHandler.use(MiddleCache);
 RequestHandler.use(MiddleProxy);
 

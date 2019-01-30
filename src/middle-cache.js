@@ -1,5 +1,4 @@
 
-import createResponseCache from './response-cache.js';
 import { serverError, serviceUnavailable, badRequest } from './error-handler.js';
 
 export const setUpMiddleCache = (responseHandler, cacheHandler) => {
