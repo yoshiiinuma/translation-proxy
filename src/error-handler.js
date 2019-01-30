@@ -1,4 +1,5 @@
 
+import util from 'util';
 import Logger from './logger.js';
 
 export const notFound = (res) => {
