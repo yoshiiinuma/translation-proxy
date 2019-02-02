@@ -51,7 +51,7 @@ export const clientError = (e, socket) => {
   Logger.info('CLIENT ERROR');
   if (e) {
     Logger.info(e);
-    Logger.info(util.inspect(socket));
+    //Logger.info(util.inspect(socket));
   }
   socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
 };
