@@ -5,7 +5,7 @@ import Logger from './logger.js';
 import createCache from './cache.js';
 
 /**
- * opts: options for http request 
+ * opts: options for http request
  * lang: google cloud translate language code
  */
 const getFullUrl = (opts, lang) => {
@@ -23,7 +23,7 @@ const getFullUrl = (opts, lang) => {
 };
 
 /**
- * opts: options for http request 
+ * opts: options for http request
  * lang: google cloud translate language code
  */
 const getKey = (prefix, opts, lang) => {
@@ -70,8 +70,26 @@ const createResponseCache = (conf) => {
       return ttlRules.defaultTtl;
   };
 
+  const shouldSkip = (opts) => {
+    if (conf.cacheSkipUrls) {
+      if (conf.cacheSkipUrls.some((keyword) => { return opts.href.includes(keyword) })) {
+        return true;
+      }
+    }
+    if (conf.cacheSkipCookies) {
+      if (conf.cacheSkipCookies.some((keyword) => {
+          if (!opts.headers || !opts.headers.cookie) return false;
+          return opts.headers.cookie.includes(keyword);
+        })) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const get = async (opts, lang) => {
     if (!conf.cacheEnabled) return null;
+    if (shouldSkip(opts)) return null;
     const headKey = getKey('HEAD-', opts, lang)
     const pageKey = getKey('PAGE-', opts, lang)
     Logger.debug(opts.id + ' CACHE GET: ' + getFullUrl(opts, lang));
@@ -89,11 +107,7 @@ const createResponseCache = (conf) => {
   const save = async (opts, lang, resObj, body) => {
     if (!conf.cacheEnabled) return false;
     if (!(opts.method === 'GET' || opts.method === 'HEAD')) return false;
-    if (conf.cacheSkip) {
-      if (conf.cacheSkip.some((keyword) => { return opts.href.includes(keyword) })) {
-        return false;
-      }
-    }
+    if (shouldSkip(opts)) return false;
     const expInSecs = getTtl(resObj.headers['content-type']);
     const hrefKey = getKey('HREF-', opts, lang)
     const headKey = getKey('HEAD-', opts, lang)
@@ -123,6 +137,7 @@ const createResponseCache = (conf) => {
   const ResponseCache = {
     ttlRules: ttlRules,
     getTtl: getTtl,
+    shouldSkip: shouldSkip,
     get: get,
     save: save,
     del: del,
