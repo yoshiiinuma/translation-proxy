@@ -58,16 +58,51 @@ const createTtlRules = (conf) => {
   return r;
 }
 
+/**
+ * 302, 307, 500, 503: only for short term
+ */
+const CACHEABLE_RESPONSES = {
+  200: true,  // OK
+  203: true,  // Non Authoritative Information
+  204: true,  // No Content
+  206: true,  // Partial Content
+  300: true,  // Multiple Choices
+  301: true,  // Moved Permanently
+  302: true,  // Found (Moved Temporarily)
+  307: true,  // Temporary Redirect
+  308: true,  // Permanent Redirect
+  404: true,  // Not Found
+  405: true,  // Method Not Allowed
+  410: true,  // Gone
+  414: true,  // URL Too Long
+  500: true,  // Internal Server Error
+  501: true,  // Not Implemented
+  503: true,  // Service Not Available
+};
+
+const SHORTTERM_CACHE = {
+  302: true,  // Found (Moved Temporarily)
+  307: true,  // Temporary Redirect
+  500: true,  // Internal Server Error
+  503: true,  // Service Not Available
+};
+
 const createResponseCache = (conf) => {
   const cache = createCache(conf);
   const ttlRules = createTtlRules(conf);
-  const getTtl = (type) => {
-      for (let { regex, ttl } of ttlRules.rules) {
-        if (regex.test(type)) {
-          return ttl;
-        }
+  const shortTtl = conf.cacheShortTTL || DEFAULT_EXPIRE_IN_SECS;
+
+  const getTtl = (resObj) => {
+    const type = resObj.headers['content-type'];
+    if (SHORTTERM_CACHE[resObj.statusCode]) {
+      return shortTtl;
+    }
+    for (let { regex, ttl } of ttlRules.rules) {
+      if (regex.test(type)) {
+        return ttl;
       }
-      return ttlRules.defaultTtl;
+    }
+    return ttlRules.defaultTtl;
   };
 
   const shouldSkip = (reqObj) => {
@@ -85,26 +120,6 @@ const createResponseCache = (conf) => {
       }
     }
     return false;
-  };
-
-  /**
-   * 302, 500, 503: only for short term
-   */
-  const CACHEABLE_RESPONSES = {
-    200: true,  // OK
-    203: true,  // Non Authoritative Information
-    204: true,  // No Content
-    206: true,  // Partial Content
-    300: true,  // Multiple Choices
-    301: true,  // Moved Permanently
-    302: true,  // Found (Moved Temporarily)
-    404: true,  // Not Found
-    405: true,  // Method Not Allowed
-    410: true,  // Gone
-    414: true,  // URL Too Long
-    500: true,  // Internal Server Error
-    501: true,  // Not Implemented
-    503: true,  // Service Not Available
   };
 
   const isCacheable = (reqObj, resObj) => {
@@ -137,7 +152,7 @@ const createResponseCache = (conf) => {
     //if (!(reqObj.method === 'GET' || reqObj.method === 'HEAD')) return false;
     if (!isCacheable(reqObj, resObj)) return false;
     if (shouldSkip(reqObj)) return false;
-    const expInSecs = getTtl(resObj.headers['content-type']);
+    const expInSecs = getTtl(resObj);
     const hrefKey = getKey('HREF-', reqObj, lang)
     const headKey = getKey('HEAD-', reqObj, lang)
     const pageKey = getKey('PAGE-', reqObj, lang)

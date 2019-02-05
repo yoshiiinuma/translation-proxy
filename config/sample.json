@@ -2,6 +2,7 @@
   "cacheEnabled": true,
   "cacheSkipUrls": ["do-not-cache-if-requested-url-contains-keyword"],
   "cacheSkipCookies": ["do-not-cache-if-request-contains-cookie"],
+  "cacheShortTTL": 60,
   "cacheTTL": [
       { "type": "text/html",       "ttl":  86400 },
       { "type": "text/css",        "ttl": 259200 },
