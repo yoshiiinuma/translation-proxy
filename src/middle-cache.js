@@ -1,5 +1,5 @@
 
-import { serverError, serviceUnavailable, badRequest } from './error-handler.js';
+import { serverError } from './error-handler.js';
 
 export const setUpMiddleCache = (responseHandler, cacheHandler) => {
   const ResponseHandler = responseHandler;

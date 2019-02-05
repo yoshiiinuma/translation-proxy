@@ -30,6 +30,124 @@ const resObj = {
   }
 };
 
+describe('ResponseCache#isCacheable', () => {
+  const ResponseCache = createResponseCache(conf);
+
+  context('when the request method is GET', () => {
+    const reqObj = { method: 'GET' };
+
+    context('and the status code is 200', () => {
+      const resObj = { statusCode: 200 };
+
+      it('returns true', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(true);
+      });
+    });
+
+    context('and the status code is 404', () => {
+      const resObj = { statusCode: 404 };
+
+      it('returns true', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(true);
+      });
+    });
+
+    context('and the status code is 304', () => {
+      const resObj = { statusCode: 304 };
+
+      it('returns false', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+
+    context('and the status code is 400', () => {
+      const resObj = { statusCode: 400 };
+
+      it('returns false', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+
+    context('and the status code is 401', () => {
+      const resObj = { statusCode: 401 };
+
+      it('returns false', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+
+    context('and the status code is 403', () => {
+      const resObj = { statusCode: 403 };
+
+      it('returns false', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+  });
+
+  context('when the request method is HEAD', () => {
+    const reqObj = { method: 'HEAD' };
+
+    context('and the status code is 200', () => {
+      const resObj = { statusCode: 200 };
+
+      it('returns true', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(true);
+      });
+    });
+
+    context('and the status code is 404', () => {
+      const resObj = { statusCode: 404 };
+
+      it('returns true', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(true);
+      });
+    });
+
+    context('and the status code is 304', () => {
+      const resObj = { statusCode: 304 };
+
+      it('returns false', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+
+    context('and the status code is 401', () => {
+      const resObj = { statusCode: 401 };
+
+      it('returns false', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+
+    context('and the status code is 403', () => {
+      const resObj = { statusCode: 403 };
+
+      it('returns false', () => {
+        expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+  });
+
+  context('when the request method is POST', () => {
+    const reqObj = { method: 'POST' };
+    const resObj = { statusCode: 200 };
+
+    it('returns false', () => {
+      expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+    });
+  });
+
+  context('when the request method is PURGE', () => {
+    const reqObj = { method: 'PURGE' };
+    const resObj = { statusCode: 200 };
+
+    it('returns false', () => {
+      expect(ResponseCache.isCacheable(reqObj, resObj)).to.be.equal(false);
+    });
+  });
+});
+
 describe('ResponseCache#shouldSkip', () => {
   context('when the requested URL includes a keyword defined in conf.cacheSkipUrls', () => {
     const reqObj = {

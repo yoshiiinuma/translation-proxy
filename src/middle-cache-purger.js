@@ -1,6 +1,6 @@
 
 import Logger from './logger.js';
-import { serverError, serviceUnavailable, badRequest } from './error-handler.js';
+import { serverError } from './error-handler.js';
 
 export const setUpMiddleCachePurger = (cacheHandler) => {
   const ResponseCache = cacheHandler;

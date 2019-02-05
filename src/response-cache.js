@@ -5,13 +5,13 @@ import Logger from './logger.js';
 import createCache from './cache.js';
 
 /**
- * opts: options for http request
+ * reqObj: options for http request
  * lang: google cloud translate language code
  */
-const getFullUrl = (opts, lang) => {
-  let url = opts.protocol + '//' + opts.host;
-  if (opts.port) url += ':' + opts.port;
-  url += opts.path;
+const getFullUrl = (reqObj, lang) => {
+  let url = reqObj.protocol + '//' + reqObj.host;
+  if (reqObj.port) url += ':' + reqObj.port;
+  url += reqObj.path;
   if (lang && !url.includes('lang=')) {
     if (url.includes('?')) {
       url += '&lang=' + lang;
@@ -23,21 +23,21 @@ const getFullUrl = (opts, lang) => {
 };
 
 /**
- * opts: options for http request
+ * reqObj: options for http request
  * lang: google cloud translate language code
  */
-const getKey = (prefix, opts, lang) => {
-  const reqStr = opts.method + '+' + getFullUrl(opts, lang);
+const getKey = (prefix, reqObj, lang) => {
+  const reqStr = reqObj.method + '+' + getFullUrl(reqObj, lang);
   let key = prefix + crypto.createHash('md5').update(reqStr).digest('hex');
   return key;
 };
 
-const getCache = async (opts, lang) => {
-  return await cache.getAsync(getKey('PAGE-', opts, lang));
+const getCache = async (reqObj, lang) => {
+  return await cache.getAsync(getKey('PAGE-', reqObj, lang));
 }
 
-const setCache = async (opts, lang, val) => {
-  return await cache.setAsync(getKey('PAGE-', opts, lang), val);
+const setCache = async (reqObj, lang, val) => {
+  return await cache.setAsync(getKey('PAGE-', reqObj, lang), val);
 }
 
 const DEFAULT_EXPIRE_IN_SECS = 300;
@@ -70,16 +70,16 @@ const createResponseCache = (conf) => {
       return ttlRules.defaultTtl;
   };
 
-  const shouldSkip = (opts) => {
+  const shouldSkip = (reqObj) => {
     if (conf.cacheSkipUrls) {
-      if (conf.cacheSkipUrls.some((keyword) => { return opts.href.includes(keyword) })) {
+      if (conf.cacheSkipUrls.some((keyword) => { return reqObj.href.includes(keyword) })) {
         return true;
       }
     }
     if (conf.cacheSkipCookies) {
       if (conf.cacheSkipCookies.some((keyword) => {
-          if (!opts.headers || !opts.headers.cookie) return false;
-          return opts.headers.cookie.includes(keyword);
+          if (!reqObj.headers || !reqObj.headers.cookie) return false;
+          return reqObj.headers.cookie.includes(keyword);
         })) {
         return true;
       }
@@ -87,16 +87,44 @@ const createResponseCache = (conf) => {
     return false;
   };
 
-  const get = async (opts, lang) => {
+  /**
+   * 302, 500, 503: only for short term
+   */
+  const CACHEABLE_RESPONSES = {
+    200: true,  // OK
+    203: true,  // Non Authoritative Information
+    204: true,  // No Content
+    206: true,  // Partial Content
+    300: true,  // Multiple Choices
+    301: true,  // Moved Permanently
+    302: true,  // Found (Moved Temporarily)
+    404: true,  // Not Found
+    405: true,  // Method Not Allowed
+    410: true,  // Gone
+    414: true,  // URL Too Long
+    500: true,  // Internal Server Error
+    501: true,  // Not Implemented
+    503: true,  // Service Not Available
+  };
+
+  const isCacheable = (reqObj, resObj) => {
+    if (reqObj.method !== 'GET' && reqObj.method !== 'HEAD') return false;
+    if (CACHEABLE_RESPONSES[resObj.statusCode]) {
+      return true;
+    }
+    return false
+  };
+
+  const get = async (reqObj, lang) => {
     if (!conf.cacheEnabled) return null;
-    if (shouldSkip(opts)) return null;
-    const headKey = getKey('HEAD-', opts, lang)
-    const pageKey = getKey('PAGE-', opts, lang)
-    Logger.debug(opts.id + ' CACHE GET: ' + getFullUrl(opts, lang));
-    Logger.debug(opts.id + ' CACHE GET: ' + headKey);
-    Logger.debug(opts.id + ' CACHE GET: ' + pageKey);
-    const head = await cache.getAsync(getKey('HEAD-', opts, lang));
-    const body = await cache.getAsync(getKey('PAGE-', opts, lang));
+    if (shouldSkip(reqObj)) return null;
+    const headKey = getKey('HEAD-', reqObj, lang)
+    const pageKey = getKey('PAGE-', reqObj, lang)
+    Logger.debug(reqObj.id + ' CACHE GET: ' + getFullUrl(reqObj, lang));
+    Logger.debug(reqObj.id + ' CACHE GET: ' + headKey);
+    Logger.debug(reqObj.id + ' CACHE GET: ' + pageKey);
+    const head = await cache.getAsync(getKey('HEAD-', reqObj, lang));
+    const body = await cache.getAsync(getKey('PAGE-', reqObj, lang));
     if (!head || !body) return null;
     return {
       res: JSON.parse(head.toString()),
@@ -104,33 +132,34 @@ const createResponseCache = (conf) => {
     };
   };
 
-  const save = async (opts, lang, resObj, body) => {
+  const save = async (reqObj, lang, resObj, body) => {
     if (!conf.cacheEnabled) return false;
-    if (!(opts.method === 'GET' || opts.method === 'HEAD')) return false;
-    if (shouldSkip(opts)) return false;
+    //if (!(reqObj.method === 'GET' || reqObj.method === 'HEAD')) return false;
+    if (!isCacheable(reqObj, resObj)) return false;
+    if (shouldSkip(reqObj)) return false;
     const expInSecs = getTtl(resObj.headers['content-type']);
-    const hrefKey = getKey('HREF-', opts, lang)
-    const headKey = getKey('HEAD-', opts, lang)
-    const pageKey = getKey('PAGE-', opts, lang)
-    Logger.debug(opts.id + ' CACHE SAVE: ' + getFullUrl(opts, lang));
-    Logger.debug(opts.id + ' CACHE SAVE: ' + hrefKey);
-    Logger.debug(opts.id + ' CACHE SAVE: ' + headKey);
-    Logger.debug(opts.id + ' CACHE SAVE: ' + pageKey);
+    const hrefKey = getKey('HREF-', reqObj, lang)
+    const headKey = getKey('HEAD-', reqObj, lang)
+    const pageKey = getKey('PAGE-', reqObj, lang)
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + getFullUrl(reqObj, lang));
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + hrefKey);
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + headKey);
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + pageKey);
     await cache.setAsync(hrefKey, resObj.href, expInSecs);
     await cache.setAsync(headKey, JSON.stringify(resObj), expInSecs);
     await cache.setAsync(pageKey, body, expInSecs);
     return true;
   };
 
-  const del = async (opts, lang) => {
+  const del = async (reqObj, lang) => {
     if (!conf.cacheEnabled) return false;
-    const headKey = getKey('HEAD-', opts, lang)
-    const pageKey = getKey('PAGE-', opts, lang)
-    Logger.debug(opts.id + ' CACHE DEL: ' + getFullUrl(opts, lang));
-    Logger.debug(opts.id + ' CACHE DEL: ' + headKey);
-    Logger.debug(opts.id + ' CACHE DEL: ' + pageKey);
-    cache.delAsync(getKey('HEAD-', opts, lang));
-    cache.delAsync(getKey('PAGE-', opts, lang));
+    const headKey = getKey('HEAD-', reqObj, lang)
+    const pageKey = getKey('PAGE-', reqObj, lang)
+    Logger.debug(reqObj.id + ' CACHE DEL: ' + getFullUrl(reqObj, lang));
+    Logger.debug(reqObj.id + ' CACHE DEL: ' + headKey);
+    Logger.debug(reqObj.id + ' CACHE DEL: ' + pageKey);
+    cache.delAsync(getKey('HEAD-', reqObj, lang));
+    cache.delAsync(getKey('PAGE-', reqObj, lang));
     return true;
   };
 
@@ -138,13 +167,14 @@ const createResponseCache = (conf) => {
     ttlRules: ttlRules,
     getTtl: getTtl,
     shouldSkip: shouldSkip,
+    isCacheable: isCacheable,
     get: get,
     save: save,
     del: del,
-    purge: async (opts, lang) => {
+    purge: async (reqObj, lang) => {
       if (!conf.cacheEnabled) return false;
-      del({ ...opts, ...{ method: 'GET' } }, lang);
-      del({ ...opts, ...{ method: 'HEAD' } }, lang);
+      del({ ...reqObj, ...{ method: 'GET' } }, lang);
+      del({ ...reqObj, ...{ method: 'HEAD' } }, lang);
       return true;
     }
   };
