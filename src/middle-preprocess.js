@@ -45,11 +45,6 @@ export const setUpPreprocessor = (conf) => {
     headers['X-Forwarded-Proto'] = scheme;
     headers['X-Real-IP'] = remoteIp;
 
-    console.log('===================================================================================');
-    console.log('==> ' + method + ' ' + scheme + '://' + host + reqUrl.path);
-    console.log('===================================================================================');
-    console.log(headers);
-
     return {
       id,
       href: scheme + '://' + host + reqUrl.path,

@@ -7,8 +7,8 @@
     "exec": "babel-node src/index.js",
     "serv": "babel-node src/server.js",
     "build": "babel src --out-dir dist -s",
-    "unit2": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/response-cache-test.js' --exit",
-    "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/response-handler-test.js' --exit",
+    "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/response-cache-test.js' --exit",
+    "unit2": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/response-handler-test.js' --exit",
     "test": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/**/*.{js,es6}' --exit"
   },
   "babel": {

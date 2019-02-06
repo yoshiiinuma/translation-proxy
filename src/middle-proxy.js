@@ -33,11 +33,6 @@ const logProxyResponse = (res, opts) => {
   if (encoding) msg += ' ENCODING: "' + encoding + '"';
   if (transfer) msg += ' TRANSFER: "' + transfer + '"';
 
-  console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-  console.log('++>      ' + msg);
-  console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-  console.log(res.headers);
-
   //console.log(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
   Logger.info(opts.id + ' PROXY RESPONSE RCEIV: ' + msg);
   Logger.debug(res.headers);
@@ -84,6 +79,7 @@ export const setUpMiddleProxy = (responseHandler, agentSelector, cacheHandler, c
         headers['access-control-allow-origin'] = reqObj.host;
         delete headers['transfer-encoding'];
       }
+
       const savedRes = {
         statusCode: proxyRes.statusCode,
         statusMessage: proxyRes.statusMessage,

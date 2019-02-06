@@ -130,53 +130,52 @@ const createResponseCache = (conf) => {
     return false
   };
 
+  const RGX_NOCACHE = new RegExp('no-cache');
+
+  /**
+   * Validates the cache if and only if either if-none-match or if-modified-since is provided.
+   * Returns false otherwise.
+   */
   const validate = (reqObj, cachedRes) => {
     const req = reqObj.headers;
     const res = cachedRes.headers;
 
-    //console.log('########################################################');
-    //console.log(req);
-    //console.log('-------------------------------------------------------');
-    //console.log(res);
-    //console.log('########################################################');
-    //if (req && req['cache-control']) console.log('CACHE-CONTROL:     ' + req['cache-control']);
-    //if (req && req['if-none-match']) console.log('IF-NONE-MATCH: ' + req['if-none-match']);
-    //if (res && res['etag']) console.log('ETAG:          ' + res['etag']);
-    //if (req && req['if-modified-since']) console.log('IF-MODIFIED-SINCE: ' + req['if-modified-since']);
-    //if (res && res['last-modified']) console.log('LAST-MODIFIED:     ' + res['last-modified']);
-    //if (res && res['date']) console.log('DATE:              ' + res['date']);
-    //if (res && res['expires']) console.log('EXPIRES:           ' + res['expires']);
-    //if (req && req['if-modified-since']) console.log('IF-MODIFIED-SINCE: ' + Date.parse(req['if-modified-since']));
-    //if (res && res['last-modified']) console.log('LAST-MODIFIED:     ' + Date.parse(res['last-modified']));
-    //if (res && res['date']) console.log('DATE:              ' + Date.parse(res['date']));
-    //if (res && res['expires']) console.log('EXPIRES:           ' + Date.parse(res['expires']));
+    if (!req) {
+      Logger.debug(reqObj.id + ' CACHE VALIDATION: NO REQUEST HEADERS');
+      return false;
+    }
+    if (!res) {
+      Logger.debug(reqObj.id + ' CACHE VALIDATION: NO RESPONSE HEADERS');
+      return false;
+    }
 
-    if (req && req['if-none-match']) {
-      if (res && res['etag']) {
-        if (req['if-none-match'] !== res.etag) {
-          Logger.debug(reqObj.id + ' CACHE VALIDATION: ETAG NOT MATCH')
-          return false;
-        }
-      } else {
-        Logger.debug(reqObj.id + ' CACHE VALIDATION: ETAG NOT EXIST')
+    if (req['cache-control']) {
+      if (RGX_NOCACHE.test(req['cache-control'])) {
+        Logger.debug(reqObj.id + ' CACHE VALIDATION: NO-CACHE');
         return false;
       }
     }
 
-    if (req && req['if-modified-since']) {
-      if (res && res['last-modified']) {
-        if (req['if-modified-since'] !== res['last-modified']) {
-          Logger.debug(reqObj.id + ' CACHE VALIDATION: LAST-MODIFIED NOT MATCH');
-          return false;
+    if (req['if-none-match']) {
+      if (res['etag']) {
+        if (req['if-none-match'] === res.etag) {
+          Logger.debug(reqObj.id + ' CACHE VALIDATION: ETAG MATCHED')
+          return true;
         }
-      } else {
-        Logger.debug(reqObj.id + ' CACHE VALIDATION: LAST-MODIFIED NOT EXIST');
-        return false;
       }
     }
 
-    Logger.debug(reqObj.id + ' CACHE VALIDATION: OK');
-    return true;
+    if (req['if-modified-since']) {
+      if (res['last-modified']) {
+        if (req['if-modified-since'] === res['last-modified']) {
+          Logger.debug(reqObj.id + ' CACHE VALIDATION: LAST-MODIFIED MATCHED');
+          return true;
+        }
+      }
+    }
+
+    Logger.debug(reqObj.id + ' CACHE VALIDATION: FAILED');
+    return false;
   };
 
   const get = async (reqObj, lang) => {
