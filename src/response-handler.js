@@ -39,6 +39,12 @@ export const setUpResponseHandler = (translateFunc, cacheHandler) => {
   const translator = translateFunc;
   const ResponseCache = cacheHandler;
 
+  ResponseHandler.sendNotModified = (res, proxyResObj, logPrefix) => {
+    Logger.info(logPrefix + 'END: RETURNING 304');
+    res.writeHead(304, 'Not Modified', proxyResObj.headers)
+    res.end();
+  }
+
   ResponseHandler.sendBuffer = (res, buffer, proxyResObj, logPrefix) => {
     //console.log(logPrefix + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);
     Logger.info(logPrefix + ': ' + buffer.length + ' == ' + proxyResObj.headers['content-length']);

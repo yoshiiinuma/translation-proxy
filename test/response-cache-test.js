@@ -31,6 +31,103 @@ const resObj = {
   }
 };
 
+describe('ResponseCache#validate', () => {
+  const ResponseCache = createResponseCache(conf);
+
+  context('when the request has If-None-Match header', () => {
+    const reqObj = { headers: { 'if-none-match': 'abcdefghi' } };
+
+    context('and cached Etag matches it', () => {
+      const resObj = {
+        headers: {
+          date: 'Tue, 05 Feb 2019 23:57:34 GMT',
+          'last-modified': 'Wed, 25 Jul 2018 01:08:54 GMT',
+          etag: 'abcdefghi',
+          expires: 'Thu, 31 Dec 2037 23:55:55 GMT'
+        }
+      };
+
+      it('returns true', () => {
+        expect(ResponseCache.validate(reqObj, resObj)).to.be.equal(true);
+      });
+    });
+
+    context('and cached Etag does not match it', () => {
+      const resObj = {
+        headers: {
+          date: 'Tue, 05 Feb 2019 23:57:34 GMT',
+          'last-modified': 'Wed, 25 Jul 2018 01:08:54 GMT',
+          etag: 'xxxxxxx',
+          expires: 'Thu, 31 Dec 2037 23:55:55 GMT'
+        }
+      };
+
+      it('returns false', () => {
+        expect(ResponseCache.validate(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+
+    context('and cached Etag does not exist', () => {
+      const resObj = {
+        headers: {
+          date: 'Tue, 05 Feb 2019 23:57:34 GMT',
+          'last-modified': 'Wed, 25 Jul 2018 01:08:54 GMT',
+          expires: 'Thu, 31 Dec 2037 23:55:55 GMT'
+        }
+      };
+
+      it('returns false', () => {
+        expect(ResponseCache.validate(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+  });
+
+  context('when the request has If-Modified-Since header', () => {
+    const reqObj = { headers: { 'if-modified-since': 'Wed, 25 Jul 2018 01:08:54 GMT' } };
+
+    context('and cached Last-Modified matches it', () => {
+      const resObj = {
+        headers: {
+          date: 'Tue, 05 Feb 2019 23:57:34 GMT',
+          'last-modified': 'Wed, 25 Jul 2018 01:08:54 GMT',
+          expires: 'Thu, 31 Dec 2037 23:55:55 GMT'
+        }
+      };
+
+      it('returns true', () => {
+        expect(ResponseCache.validate(reqObj, resObj)).to.be.equal(true);
+      });
+    });
+
+    context('and cached Last-Modified does not match it', () => {
+      const resObj = {
+        headers: {
+          date: 'Tue, 05 Feb 2019 23:57:34 GMT',
+          'last-modified': 'Tue, 25 Feb 2019 01:08:54 GMT',
+          expires: 'Thu, 31 Dec 2037 23:55:55 GMT'
+        }
+      };
+
+      it('returns false', () => {
+        expect(ResponseCache.validate(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+
+    context('and cached Last-Modified does not exist', () => {
+      const resObj = {
+        headers: {
+          date: 'Tue, 05 Feb 2019 23:57:34 GMT',
+          expires: 'Thu, 31 Dec 2037 23:55:55 GMT'
+        }
+      };
+
+      it('returns false', () => {
+        expect(ResponseCache.validate(reqObj, resObj)).to.be.equal(false);
+      });
+    });
+  });
+});
+
 describe('ResponseCache#isCacheable', () => {
   const ResponseCache = createResponseCache(conf);
 
@@ -247,6 +344,50 @@ describe('ResponseCache#save', () => {
       }
     };
     const ResponseCache = createResponseCache(conf);
+
+    before((done) => {
+      ResponseCache.del(reqObj, null).then(done());
+    });
+
+    it('does not cache the response and returns false', (done) => {
+      ResponseCache.save(reqObj, null, resObj, body)
+        .then((r) => {
+          expect(r).to.be.equal(false);
+          ResponseCache.get(reqObj, null)
+            .then((cache) => {
+              expect(cache).to.be.equal(null);
+              done();
+            });
+        });
+    });
+  });
+
+  context('when the response code is 304', () => {
+    const reqObj = {
+      href: 'http://localhost/path/to',
+      protocol: 'http:',
+      method: 'GET',
+      host: 'localhost',
+      port: 7777,
+      path: '/path/to',
+      headers: {
+        cookie: ''
+      }
+    };
+    const resObj = {
+      statusCode: 304,
+      statusMessage: 'Not Modified',
+      lang: null,
+      href: 'http://localhost/path/to',
+      encoding: 'gzip',
+      headers: {
+        'content-type': 'text/html',
+        'content-encoding': 'gzip',
+        'content-length': body.length,
+      }
+    };
+    const ResponseCache = createResponseCache(conf);
+
 
     before((done) => {
       ResponseCache.del(reqObj, null).then(done());

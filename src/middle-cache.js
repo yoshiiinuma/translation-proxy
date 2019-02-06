@@ -18,12 +18,17 @@ export const setUpMiddleCache = (responseHandler, cacheHandler) => {
       if (translated) {
         const savedRes = translated.res
         ResponseHandler.sendBuffer(res, translated.buffer, savedRes, logPrefix + 'END: RETURNING CACHED TRANSLATED');
+        //if (ResponseCache.validate(obj, savedRes)) {
+        //  ResponseHandler.sendBuffer(res, translated.buffer, savedRes, logPrefix + 'END: RETURNING CACHED TRANSLATED');
+        //} else {
+        //  ResponseHandler.sendNotModified(res, savedRes, logPrefix);
+        //}
         return;
       }
     }
 
     const original = await ResponseCache.get(obj, null);
-    if (original) {
+    if (original && ResponseCache.validate(obj, original.res)) {
       const savedRes = original.res
       if (obj.lang) {
         savedRes.lang = obj.lang;

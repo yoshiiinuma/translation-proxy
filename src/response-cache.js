@@ -130,6 +130,55 @@ const createResponseCache = (conf) => {
     return false
   };
 
+  const validate = (reqObj, cachedRes) => {
+    const req = reqObj.headers;
+    const res = cachedRes.headers;
+
+    //console.log('########################################################');
+    //console.log(req);
+    //console.log('-------------------------------------------------------');
+    //console.log(res);
+    //console.log('########################################################');
+    //if (req && req['cache-control']) console.log('CACHE-CONTROL:     ' + req['cache-control']);
+    //if (req && req['if-none-match']) console.log('IF-NONE-MATCH: ' + req['if-none-match']);
+    //if (res && res['etag']) console.log('ETAG:          ' + res['etag']);
+    //if (req && req['if-modified-since']) console.log('IF-MODIFIED-SINCE: ' + req['if-modified-since']);
+    //if (res && res['last-modified']) console.log('LAST-MODIFIED:     ' + res['last-modified']);
+    //if (res && res['date']) console.log('DATE:              ' + res['date']);
+    //if (res && res['expires']) console.log('EXPIRES:           ' + res['expires']);
+    //if (req && req['if-modified-since']) console.log('IF-MODIFIED-SINCE: ' + Date.parse(req['if-modified-since']));
+    //if (res && res['last-modified']) console.log('LAST-MODIFIED:     ' + Date.parse(res['last-modified']));
+    //if (res && res['date']) console.log('DATE:              ' + Date.parse(res['date']));
+    //if (res && res['expires']) console.log('EXPIRES:           ' + Date.parse(res['expires']));
+
+    if (req && req['if-none-match']) {
+      if (res && res['etag']) {
+        if (req['if-none-match'] !== res.etag) {
+          Logger.debug(reqObj.id + ' CACHE VALIDATION: ETAG NOT MATCH')
+          return false;
+        }
+      } else {
+        Logger.debug(reqObj.id + ' CACHE VALIDATION: ETAG NOT EXIST')
+        return false;
+      }
+    }
+
+    if (req && req['if-modified-since']) {
+      if (res && res['last-modified']) {
+        if (req['if-modified-since'] !== res['last-modified']) {
+          Logger.debug(reqObj.id + ' CACHE VALIDATION: LAST-MODIFIED NOT MATCH');
+          return false;
+        }
+      } else {
+        Logger.debug(reqObj.id + ' CACHE VALIDATION: LAST-MODIFIED NOT EXIST');
+        return false;
+      }
+    }
+
+    Logger.debug(reqObj.id + ' CACHE VALIDATION: OK');
+    return true;
+  };
+
   const get = async (reqObj, lang) => {
     if (!conf.cacheEnabled) return null;
     if (shouldSkip(reqObj)) return null;
@@ -183,6 +232,7 @@ const createResponseCache = (conf) => {
     getTtl: getTtl,
     shouldSkip: shouldSkip,
     isCacheable: isCacheable,
+    validate: validate,
     get: get,
     save: save,
     del: del,
