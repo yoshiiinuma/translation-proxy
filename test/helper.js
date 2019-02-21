@@ -131,7 +131,13 @@ export class MockClientRequest extends events.EventEmitter {
     this._headers.host = (reqObj && reqObj.host) ? reqObj.host : null;
     if (reqObj && reqObj.path) {
       this._url = reqObj.path;
-      if (reqObj.lang) this._url += '?lang=' + reqObj.lang;
+      if (reqObj.lang) {
+        if (this._url.includes('?')) {
+          this._url += '&lang=' + reqObj.lang;
+        } else {
+          this._url += '?lang=' + reqObj.lang;
+        }
+      }
     }
   }
 

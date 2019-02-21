@@ -4,6 +4,8 @@ import URL from 'url';
 import Logger from './logger.js';
 
 const rgxHost = /^(.+):(\d+)$/;
+const rgxQuery = /\?(.+)$/;
+const rgxLang = /&?(lang=([a-z][a-zA-Z-]+)&?)/;
 
 export const setUpPreprocessor = (conf) => {
   let cnt = 0;
@@ -26,17 +28,19 @@ export const setUpPreprocessor = (conf) => {
       requestedPort = parseInt(matched[2]);
     }
 
-    const params = [];
-    for(let key in reqUrl.query) {
-      if (key === 'lang') {
-        lang = reqUrl.query[key];
-      } else {
-        params.push(key + '=' + reqUrl.query[key]);
+    let path = reqUrl.path;
+    let query = null;
+    if (rgxQuery.test(path)) {
+      const queryMatched = rgxQuery.exec(path);
+      query = queryMatched[1];
+      if (rgxLang.test(query)) {
+        const langMatched = rgxLang.exec(query);
+        lang = langMatched[2];
+        path = path.replace(langMatched[1], '');
       }
     }
-
-    let path = reqUrl.pathname;
-    if (params.length > 0) path += '?' + params.join('&');
+    if (path.endsWith('&')) path = path.slice(0, -1);
+    if (path.endsWith('?')) path = path.slice(0, -1);
 
     const headers = Object.assign({}, req.headers);
     const remoteIp = requestIp.getClientIp(req) || '';
