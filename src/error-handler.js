@@ -47,6 +47,13 @@ export const badRequest = (e, res) => {
   res.end('Error 400: Bad Request');
 };
 
+export const forbidden = (e, res) => {
+  Logger.info('403 Forbidden');
+  Logger.info(e);
+  res.writeHead(403, 'Forbidden', { 'content-type': 'text/plain' });
+  res.end('Error 403: Forbidden');
+};
+
 export const clientError = (e, socket) => {
   Logger.info('CLIENT ERROR');
   if (e) {

@@ -13,6 +13,7 @@
       { "type": "default",         "ttl": 604800 }
   ],
   "proxiedHosts": ["your.domain.com"],
+  "purgeAllowedIps": ["127.0.0.1"],
   "translationSelectors": ["#header", "#main", "#footer"],
   "maxPageSize": 80000,
   "maxTextPerRequest": 12000,
