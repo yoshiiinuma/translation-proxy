@@ -8,13 +8,7 @@ import createResponseCache from '../src/response-cache.js';
 import { setUpResponseHandler } from '../src/response-handler.js';
 import { setUpMiddleProxy } from '../src/middle-proxy.js';
 
-Logger.initialize({
-  "enableLog": true,
-  "logLevel": "debug",
-  "logDir": "./logs",
-  "logFile": "test.log",
-  "accessLogFile": "test-access.log",
-});
+TestHelper.enableTestLog();
 
 const port = 8888;
 

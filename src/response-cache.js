@@ -226,18 +226,25 @@ const createResponseCache = (conf) => {
     return true;
   };
 
-  const flushall = (reqObj) => {
+  const purgeAll = (reqObj) => {
     if (!conf.cacheEnabled) return false;
     Logger.debug(reqObj.id + ' CACHE FLASHALL: ' + getFullUrl(reqObj));
     cache.flushallAsync();
     return true;
   };
 
-  const flushallSync = async (reqObj) => {
+  const purgeAllSync = async (reqObj) => {
     if (!conf.cacheEnabled) return false;
     Logger.debug(reqObj.id + ' CACHE FLASHALL: ' + getFullUrl(reqObj));
     await cache.flushallAsync();
     return true;
+  };
+
+  const purge = async (reqObj, lang) => {
+      if (!conf.cacheEnabled) return false;
+      del({ ...reqObj, ...{ method: 'GET' } }, lang);
+      del({ ...reqObj, ...{ method: 'HEAD' } }, lang);
+      return true;
   };
 
   const ResponseCache = {
@@ -249,14 +256,9 @@ const createResponseCache = (conf) => {
     get: get,
     save: save,
     del: del,
-    flushall: flushall,
-    flushallSync: flushallSync,
-    purge: async (reqObj, lang) => {
-      if (!conf.cacheEnabled) return false;
-      del({ ...reqObj, ...{ method: 'GET' } }, lang);
-      del({ ...reqObj, ...{ method: 'HEAD' } }, lang);
-      return true;
-    }
+    purgeAll: purgeAll,
+    purgeAllSync: purgeAllSync,
+    purge: purge
   };
 
   return ResponseCache;

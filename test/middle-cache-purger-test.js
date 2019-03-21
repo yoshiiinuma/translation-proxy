@@ -1,9 +1,11 @@
 
 import { expect } from 'chai';
 
-import * as TestHelper from './helper.js';
 import createResponseCache from '../src/response-cache.js';
 import { setUpMiddleCachePurger } from '../src/middle-cache-purger.js';
+import * as TestHelper from './helper.js';
+
+TestHelper.enableTestLog();
 
 const port = 8888;
 const conf = {
@@ -49,6 +51,54 @@ const resObj = {
 };
 
 describe('MiddleCachePurger', () => {
+  context('when purgeAll gets requested and cache exists', () => {
+    const reqObj1 = { ...reqObj, ...{ href: 'http://localhost/path/to/1', path: '/path/to/1' } };
+    const reqObj2 = { ...reqObj, ...{ href: 'http://localhost/path/to/2', path: '/path/to/2' } };
+    const reqObj3 = { ...reqObj, ...{ href: 'http://localhost/path/to/3', path: '/path/to/3' } };
+    const resObj1 = { ...resObj, ...{ href: 'http://localhost/path/to/1' } };
+    const resObj2 = { ...resObj, ...{ href: 'http://localhost/path/to/2' } };
+    const resObj3 = { ...resObj, ...{ href: 'http://localhost/path/to/3' } };
+    const reqObj = {
+      id: '    55555',
+      href: 'http://localhost/purge-proxy-cache?page=all',
+      protocol: 'http:',
+      method: 'PURGE',
+      host: 'localhost',
+      port: port,
+      path: '/purge-proxy-cache?page=all',
+    };
+    const MiddleCachePurger = setUpMiddleCachePurger(ResponseCache);
+    const req = new TestHelper.MockClientRequest(reqObj);
+    const res = new TestHelper.MockResponse(reqObj);
+    const next = TestHelper.createNextFunc();
+
+    before((done) => {
+      ResponseCache.save(reqObj1, null, resObj1, 'BODY 1')
+        .then(ResponseCache.save(reqObj2, null, resObj2, 'BODY 2'))
+        .then(ResponseCache.save(reqObj3, null, resObj3, 'BODY 3'))
+        .then(done());
+    });
+
+    it('purges all the cache and returns 200', (done) => {
+      res.on('end', async () => {
+        let r;
+        expect(next.isCalled).to.be.equal(false);
+        expect(res.statusCode).to.be.equal(200);
+        expect(res.statusMessage).to.be.equal('OK');
+        expect(res.data.toString()).to.be.equal('FLUSHALL request was successfully submitted');
+        r = await ResponseCache.get(reqObj1, null);
+        expect(r).to.be.null;
+        r = await ResponseCache.get(reqObj2, null);
+        expect(r).to.be.null;
+        r = await ResponseCache.get(reqObj3, null);
+        expect(r).to.be.null;
+        done();
+      });
+
+      MiddleCachePurger(req, res, next.func);
+    });
+  });
+
   context('when purge gets requested and cache exists', () => {
     const MiddleCachePurger = setUpMiddleCachePurger(ResponseCache);
     const req = new TestHelper.MockClientRequest(reqObjPurge);
@@ -66,7 +116,7 @@ describe('MiddleCachePurger', () => {
         expect(next.isCalled).to.be.equal(false);
         expect(res.statusCode).to.be.equal(200);
         expect(res.statusMessage).to.be.equal('OK');
-        expect(res.data.toString()).to.be.equal('Cache was successfully deleted');
+        expect(res.data.toString()).to.be.equal('PURGE request was successfully submitted');
         const cache1 = await ResponseCache.get(reqObj, null);
         expect(cache1).to.be.equal(null);
         const cache2 = await ResponseCache.get(reqObjHead, null);
@@ -95,7 +145,7 @@ describe('MiddleCachePurger', () => {
         expect(next.isCalled).to.be.equal(false);
         expect(res.statusCode).to.be.equal(200);
         expect(res.statusMessage).to.be.equal('OK');
-        expect(res.data.toString()).to.be.equal('Cache was successfully deleted');
+        expect(res.data.toString()).to.be.equal('PURGE request was successfully submitted');
         const cache = await ResponseCache.get(reqObj, null);
         expect(cache).to.be.equal(null);
         done();

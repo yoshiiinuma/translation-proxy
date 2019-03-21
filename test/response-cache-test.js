@@ -2,6 +2,9 @@
 import { expect } from 'chai';
 
 import createResponseCache from '../src/response-cache.js';
+import * as TestHelper from './helper.js';
+
+TestHelper.enableTestLog();
 
 const conf = {
   "db": 9,
@@ -383,7 +386,7 @@ describe('ResponseCache#flushall', () => {
 
   it('flash all the cache and return true', async () => {
     let r;
-    r = await ResponseCache.flushall(reqObj);
+    r = await ResponseCache.purgeAll(reqObj);
     expect(r).to.be.equal(true);
     r = await ResponseCache.get(reqObj1, null);
     expect(r).to.be.null;
