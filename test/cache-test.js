@@ -31,6 +31,33 @@ describe('cache#flushallAsync', () => {
   });
 });
 
+describe('cache#flushall', () => {
+  const cache = createCache({ db: 9 });
+  const key1 = 'TEST1';
+  const key2 = 'TEST2';
+  const key3 = 'TEST3';
+  const val1 = 'Testing cache now 1';
+  const val2 = 'Testing cache now 2';
+  const val3 = 'Testing cache now 3';
+
+  before((done) => {
+    cache.setAsync(key1, val1)
+      .then(cache.setAsync(key2, val2))
+      .then(cache.setAsync(key3, val3))
+      .then(cache.flushall(() => done()));
+  });
+
+  it('purges all the cache', async () => {
+    let r; 
+    r = await cache.getAsync(key1);
+    expect(r).to.be.null;
+    r = await cache.getAsync(key2);
+    expect(r).to.be.null;
+    r = await cache.getAsync(key3);
+    expect(r).to.be.null;
+  });
+});
+
 describe('cache#getAsync', () => {
   const cache = createCache({ db: 9 });
   const key = 'TEST';
