@@ -1,5 +1,6 @@
 
 import events from 'events';
+import Logger from '../src/logger.js';
 
 const debug = false;
 const port  = 9998;
@@ -18,15 +19,17 @@ const port  = 9998;
 //  "reidsPort": 6379,
 //};
 //
-//Logger.initialize({
-//  "enableLog": true,
-//  "logLevel": "debug",
-//  "logDir": "./logs",
-//  "logFile": "test.log",
-//  "accessLogFile": "test-access.log",
-//});
-
 //const ResponseCache = createResponseCache(conf);
+
+export const enableTestLog = () => {
+  Logger.initialize({
+    "enableLog": true,
+    "logLevel": "debug",
+    "logDir": "./logs",
+    "logFile": "test.log",
+    "accessLogFile": "test-access.log",
+  });
+};
 
 export const doc = `
   <html>
