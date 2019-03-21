@@ -4,6 +4,33 @@ import createCache from '../src/cache.js';
 
 const expInSecs = 10;
 
+describe('cache#flushallAsync', () => {
+  const cache = createCache({ db: 9 });
+  const key1 = 'TEST1';
+  const key2 = 'TEST2';
+  const key3 = 'TEST3';
+  const val1 = 'Testing cache now 1';
+  const val2 = 'Testing cache now 2';
+  const val3 = 'Testing cache now 3';
+
+  before(async () => {
+    await cache.setAsync(key1, val1);
+    await cache.setAsync(key2, val1);
+    await cache.setAsync(key3, val1);
+    await cache.flushallAsync();
+  });
+
+  it('purges all the cache', async () => {
+    let r; 
+    r = await cache.getAsync(key1);
+    expect(r).to.be.null;
+    r = await cache.getAsync(key2);
+    expect(r).to.be.null;
+    r = await cache.getAsync(key3);
+    expect(r).to.be.null;
+  });
+});
+
 describe('cache#getAsync', () => {
   const cache = createCache({ db: 9 });
   const key = 'TEST';
@@ -77,7 +104,6 @@ describe('cache#get', () => {
   const cache = createCache({ db: 9 });
   const key = 'TEST';
   const val = 'Testing cache now';
-
 
   context('without setting a value', () => {
     before((done) => {
