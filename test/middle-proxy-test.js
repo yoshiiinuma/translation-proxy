@@ -19,6 +19,7 @@ const gzipped = zlib.gzipSync(doc);
 const gzippedTranslatedDoc = zlib.gzipSync(translatedDoc);
 
 const conf = {
+  "db": 9,
   "cacheEnabled": true,
   "cacheSkip": ["do-not-cache-if-url-contains"],
   "targetHttpPort": port,
@@ -26,7 +27,6 @@ const conf = {
 };
 
 const Translator = TestHelper.translator;
-//const ResponseHandler = setUpResponseHandler(Translator, ResponseCache);
 const ResponseCache = createResponseCache(conf);
 
 const setUpAgentSelector = (resObj, data, reqObj) => {

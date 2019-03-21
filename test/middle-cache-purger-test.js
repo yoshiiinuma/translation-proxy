@@ -9,6 +9,7 @@ TestHelper.enableTestLog();
 
 const port = 8888;
 const conf = {
+  "db": 9,
   "cacheEnabled": true,
   "cacheSkip": ["do-not-cache-if-url-contains"],
   "proxiedHosts": {
