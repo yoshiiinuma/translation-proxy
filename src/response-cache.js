@@ -226,6 +226,20 @@ const createResponseCache = (conf) => {
     return true;
   };
 
+  const flushall = (reqObj) => {
+    if (!conf.cacheEnabled) return false;
+    Logger.debug(reqObj.id + ' CACHE FLASHALL: ' + getFullUrl(reqObj));
+    cache.flushallAsync();
+    return true;
+  };
+
+  const flushallSync = async (reqObj) => {
+    if (!conf.cacheEnabled) return false;
+    Logger.debug(reqObj.id + ' CACHE FLASHALL: ' + getFullUrl(reqObj));
+    await cache.flushallAsync();
+    return true;
+  };
+
   const ResponseCache = {
     ttlRules: ttlRules,
     getTtl: getTtl,
@@ -235,6 +249,8 @@ const createResponseCache = (conf) => {
     get: get,
     save: save,
     del: del,
+    flushall: flushall,
+    flushallSync: flushallSync,
     purge: async (reqObj, lang) => {
       if (!conf.cacheEnabled) return false;
       del({ ...reqObj, ...{ method: 'GET' } }, lang);

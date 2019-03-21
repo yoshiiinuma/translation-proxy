@@ -4,6 +4,7 @@ import { expect } from 'chai';
 import createResponseCache from '../src/response-cache.js';
 
 const conf = {
+  "db": 9,
   "cacheEnabled": true,
   "cacheSkipUrls": ["not-cache"],
   "cacheSkipCookies": ["not-cache"],
@@ -299,6 +300,97 @@ describe('ResponseCache#shouldSkip', () => {
     it('returns false', () => {
       expect(ResponseCache.shouldSkip(reqObj)).to.be.equal(false);
     });
+  });
+});
+
+describe('ResponseCache#flushall', () => {
+  const reqObj = {
+    href: 'http://localhost/purge-cache?page=all',
+    protocol: 'http:',
+    method: 'GET',
+    host: 'localhost',
+    port: 7777,
+    path: '/purge-cache?page=all',
+  };
+  const reqObj1 = {
+    href: 'http://localhost/path/to/1',
+    protocol: 'http:',
+    method: 'GET',
+    host: 'localhost',
+    port: 7777,
+    path: '/path/to/1',
+  };
+  const reqObj2 = {
+    href: 'http://localhost/path/to/2',
+    protocol: 'http:',
+    method: 'GET',
+    host: 'localhost',
+    port: 7777,
+    path: '/path/to/2',
+  };
+  const reqObj3 = {
+    href: 'http://localhost/path/to/3',
+    protocol: 'http:',
+    method: 'GET',
+    host: 'localhost',
+    port: 7777,
+    path: '/path/to/3',
+  };
+  const resObj1 = {
+    statusCode: 200,
+    statusMessage: 'OK',
+    lang: null,
+    href: 'http://localhost/path/to/1',
+    encoding: 'gzip',
+    headers: {
+      'content-type': 'text/html',
+      'content-encoding': 'gzip',
+      'content-length': body.length,
+    }
+  };
+  const resObj2 = {
+    statusCode: 200,
+    statusMessage: 'OK',
+    lang: null,
+    href: 'http://localhost/path/to/2',
+    encoding: 'gzip',
+    headers: {
+      'content-type': 'text/html',
+      'content-encoding': 'gzip',
+      'content-length': body.length,
+    }
+  };
+  const resObj3 = {
+    statusCode: 200,
+    statusMessage: 'OK',
+    lang: null,
+    href: 'http://localhost/path/to/3',
+    encoding: 'gzip',
+    headers: {
+      'content-type': 'text/html',
+      'content-encoding': 'gzip',
+      'content-length': body.length,
+    }
+  };
+  const ResponseCache = createResponseCache(conf);
+
+  before((done) => {
+    ResponseCache.save(reqObj1, null, resObj1, 'BODY 1')
+      .then(ResponseCache.save(reqObj2, null, resObj2, 'BODY 2'))
+      .then(ResponseCache.save(reqObj3, null, resObj3, 'BODY 3'))
+      .then(done());
+  });
+
+  it('flash all the cache and return true', async () => {
+    let r;
+    r = await ResponseCache.flushall(reqObj);
+    expect(r).to.be.equal(true);
+    r = await ResponseCache.get(reqObj1, null);
+    expect(r).to.be.null;
+    r = await ResponseCache.get(reqObj2, null);
+    expect(r).to.be.null;
+    r = await ResponseCache.get(reqObj3, null);
+    expect(r).to.be.null;
   });
 });
 
