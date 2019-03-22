@@ -374,8 +374,8 @@ describe('proxy#serve', () => {
     const proxyFunc = createProxyFunc(200, 'OK', headers, buffer);
 
     before((done) => {
-      ResponseCache.save(reqObj, 'ja', resHeader, gzippedTranslatedDoc)
-        .then(ResponseCache.del(reqObj, null))
+      ResponseCache.saveSync(reqObj, 'ja', resHeader, gzippedTranslatedDoc)
+        .then(ResponseCache.delSync(reqObj, null))
         .then(done());
     });
 
@@ -426,8 +426,8 @@ describe('proxy#serve', () => {
     };
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resHeader, gzipped)
-        .then(ResponseCache.del(reqObj, 'ja'))
+      ResponseCache.saveSync(reqObj, null, resHeader, gzipped)
+        .then(ResponseCache.delSync(reqObj, 'ja'))
         .then(done());
     });
 
@@ -479,7 +479,7 @@ describe('proxy#serve', () => {
     };
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resHeader, gzipped).then(done());
+      ResponseCache.saveSync(reqObj, null, resHeader, gzipped).then(done());
     });
 
     it('returns the cached response', (done) => {
@@ -522,7 +522,7 @@ describe('proxy#serve', () => {
     const proxyFunc = createProxyFunc(200, 'OK', headers, buffer);
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resHeader, buffer).then(done());
+      ResponseCache.saveSync(reqObj, null, resHeader, buffer).then(done());
     });
 
     it('returns the cached response', (done) => {
@@ -554,7 +554,7 @@ describe('proxy#serve', () => {
     const proxyFunc = createProxyFunc(200, 'OK', headers, buffer);
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('returns the response received from a web server', (done) => {
@@ -593,7 +593,7 @@ describe('proxy#startProxyRequest', () => {
     const agent = createFakeAgentEmitError(proxyRes, buffer);
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('returns 503', (done) => {
@@ -632,7 +632,7 @@ describe('proxy#startProxyRequest', () => {
     const agent = createFakeAgent(proxyRes, buffer);
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('returns the response received from a web server', (done) => {
@@ -679,7 +679,7 @@ describe('proxy#startProxyRequest', () => {
     const agent = createFakeAgent(proxyRes, buffer);
 
     before((done) => {
-      ResponseCache.del(reqObj, 'ja').then(done());
+      ResponseCache.delSync(reqObj, 'ja').then(done());
     });
 
     it('returns the response received from a web server', (done) => {
@@ -724,7 +724,7 @@ describe('proxy#startProxyRequest', () => {
     const agent = createFakeAgent(proxyRes, gzipped);
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('returns the response received from a web server', (done) => {
@@ -775,7 +775,7 @@ describe('proxy#startProxyRequest', () => {
     const agent = createFakeAgent(proxyRes, gzipped);
 
     before((done) => {
-      ResponseCache.del(reqObj, 'ja').then(done());
+      ResponseCache.delSync(reqObj, 'ja').then(done());
     });
 
     it('returns the response received from a web server', (done) => {

@@ -74,9 +74,9 @@ describe('MiddleCachePurger', () => {
     const next = TestHelper.createNextFunc();
 
     before((done) => {
-      ResponseCache.save(reqObj1, null, resObj1, 'BODY 1')
-        .then(ResponseCache.save(reqObj2, null, resObj2, 'BODY 2'))
-        .then(ResponseCache.save(reqObj3, null, resObj3, 'BODY 3'))
+      ResponseCache.saveSync(reqObj1, null, resObj1, 'BODY 1')
+        .then(ResponseCache.saveSync(reqObj2, null, resObj2, 'BODY 2'))
+        .then(ResponseCache.saveSync(reqObj3, null, resObj3, 'BODY 3'))
         .then(done());
     });
 
@@ -107,8 +107,8 @@ describe('MiddleCachePurger', () => {
     const next = TestHelper.createNextFunc();
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resObj, buffer)
-        .then(ResponseCache.save(reqObjHead, null, resObj, ''))
+      ResponseCache.saveSync(reqObj, null, resObj, buffer)
+        .then(ResponseCache.saveSync(reqObjHead, null, resObj, ''))
         .then(done());
     });
 
@@ -136,8 +136,8 @@ describe('MiddleCachePurger', () => {
     const next = TestHelper.createNextFunc();
 
     before((done) => {
-      ResponseCache.del(reqObj, null)
-        .then(ResponseCache.del(reqObjHead, null))
+      ResponseCache.delSync(reqObj, null)
+        .then(ResponseCache.delSync(reqObjHead, null))
         .then(done());
     });
 

@@ -378,9 +378,9 @@ describe('ResponseCache#flushall', () => {
   const ResponseCache = createResponseCache(conf);
 
   before((done) => {
-    ResponseCache.save(reqObj1, null, resObj1, 'BODY 1')
-      .then(ResponseCache.save(reqObj2, null, resObj2, 'BODY 2'))
-      .then(ResponseCache.save(reqObj3, null, resObj3, 'BODY 3'))
+    ResponseCache.saveSync(reqObj1, null, resObj1, 'BODY 1')
+      .then(ResponseCache.saveSync(reqObj2, null, resObj2, 'BODY 2'))
+      .then(ResponseCache.saveSync(reqObj3, null, resObj3, 'BODY 3'))
       .then(done());
   });
 
@@ -410,18 +410,17 @@ describe('ResponseCache#save', () => {
     const ResponseCache = createResponseCache(conf);
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('does not cache the response and returns false', (done) => {
-      ResponseCache.save(reqObj, null, resObj, body)
-        .then((r) => {
-          expect(r).to.be.equal(false);
-          ResponseCache.get(reqObj, null)
-            .then((cache) => {
-              expect(cache).to.be.equal(null);
-              done();
-            });
+      let r = ResponseCache.save(reqObj, null, resObj, body)
+      expect(r).to.be.equal(false);
+      TestHelper.wait(10);
+      ResponseCache.get(reqObj, null)
+        .then((cache) => {
+          expect(cache).to.be.equal(null);
+          done();
         });
     });
   });
@@ -441,18 +440,17 @@ describe('ResponseCache#save', () => {
     const ResponseCache = createResponseCache(conf);
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('does not cache the response and returns false', (done) => {
-      ResponseCache.save(reqObj, null, resObj, body)
-        .then((r) => {
-          expect(r).to.be.equal(false);
-          ResponseCache.get(reqObj, null)
-            .then((cache) => {
-              expect(cache).to.be.equal(null);
-              done();
-            });
+      let r = ResponseCache.save(reqObj, null, resObj, body)
+      expect(r).to.be.equal(false);
+      TestHelper.wait(10);
+      ResponseCache.get(reqObj, null)
+        .then((cache) => {
+          expect(cache).to.be.equal(null);
+          done();
         });
     });
   });
@@ -485,18 +483,16 @@ describe('ResponseCache#save', () => {
 
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('does not cache the response and returns false', (done) => {
-      ResponseCache.save(reqObj, null, resObj, body)
-        .then((r) => {
-          expect(r).to.be.equal(false);
-          ResponseCache.get(reqObj, null)
-            .then((cache) => {
-              expect(cache).to.be.equal(null);
-              done();
-            });
+      let r = ResponseCache.save(reqObj, null, resObj, body)
+      expect(r).to.be.equal(false);
+      ResponseCache.get(reqObj, null)
+        .then((cache) => {
+          expect(cache).to.be.equal(null);
+          done();
         });
     });
   });
@@ -516,19 +512,18 @@ describe('ResponseCache#save', () => {
     const ResponseCache = createResponseCache(conf);
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('caches the response and returns true', (done) => {
-      ResponseCache.save(reqObj, null, resObj, body)
-        .then((r) => {
-          expect(r).to.be.equal(true);
-          ResponseCache.get(reqObj, null)
-            .then((cache) => {
-              expect(cache.res).to.eql(resObj);
-              expect(cache.buffer.toString()).to.eql(body);
-              done();
-            });
+      let r = ResponseCache.save(reqObj, null, resObj, body)
+      expect(r).to.be.equal(true);
+      TestHelper.wait(10);
+      ResponseCache.get(reqObj, null)
+        .then((cache) => {
+          expect(cache.res).to.eql(resObj);
+          expect(cache.buffer.toString()).to.eql(body);
+          done();
         });
     });
   });

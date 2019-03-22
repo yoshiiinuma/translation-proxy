@@ -88,8 +88,8 @@ describe('MiddleCache', () => {
     };
 
     before((done) => {
-      ResponseCache.save(reqObj, 'ja', resObj, gzippedTranslatedDoc)
-        .then(ResponseCache.del(reqObj, null))
+      ResponseCache.saveSync(reqObj, 'ja', resObj, gzippedTranslatedDoc)
+        .then(ResponseCache.delSync(reqObj, null))
         .then(done());
     });
 
@@ -152,8 +152,8 @@ describe('MiddleCache', () => {
     };
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resObj, gzipped)
-        .then(ResponseCache.del(reqObj, 'ja'))
+      ResponseCache.saveSync(reqObj, null, resObj, gzipped)
+        .then(ResponseCache.delSync(reqObj, 'ja'))
         .then(done());
     });
 
@@ -206,7 +206,7 @@ describe('MiddleCache', () => {
     };
 
     before((done) => {
-      ResponseCache.save(reqObj, null, resObj, buffer).then(done());
+      ResponseCache.saveSync(reqObj, null, resObj, buffer).then(done());
     });
 
     it('calls ResponseHandler.sendBuffer with the cache', (done) => {
@@ -245,7 +245,7 @@ describe('MiddleCache', () => {
     };
 
     before((done) => {
-      ResponseCache.del(reqObj, null).then(done());
+      ResponseCache.delSync(reqObj, null).then(done());
     });
 
     it('calls next', (done) => {

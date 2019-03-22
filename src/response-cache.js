@@ -195,7 +195,26 @@ const createResponseCache = (conf) => {
     };
   };
 
-  const save = async (reqObj, lang, resObj, body) => {
+  const save = (reqObj, lang, resObj, body, callback) => {
+    if (!conf.cacheEnabled) return false;
+    //if (!(reqObj.method === 'GET' || reqObj.method === 'HEAD')) return false;
+    if (!isCacheable(reqObj, resObj)) return false;
+    if (shouldSkip(reqObj)) return false;
+    const expInSecs = getTtl(resObj);
+    const hrefKey = getKey('HREF-', reqObj, lang)
+    const headKey = getKey('HEAD-', reqObj, lang)
+    const pageKey = getKey('PAGE-', reqObj, lang)
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + getFullUrl(reqObj, lang));
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + hrefKey);
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + headKey);
+    Logger.debug(reqObj.id + ' CACHE SAVE: ' + pageKey);
+    cache.setAsync(hrefKey, resObj.href, expInSecs);
+    cache.setAsync(headKey, JSON.stringify(resObj), expInSecs);
+    cache.setAsync(pageKey, body, expInSecs);
+    return true;
+  };
+
+  const saveSync = async (reqObj, lang, resObj, body) => {
     if (!conf.cacheEnabled) return false;
     //if (!(reqObj.method === 'GET' || reqObj.method === 'HEAD')) return false;
     if (!isCacheable(reqObj, resObj)) return false;
@@ -214,7 +233,7 @@ const createResponseCache = (conf) => {
     return true;
   };
 
-  const del = async (reqObj, lang) => {
+  const del = (reqObj, lang) => {
     if (!conf.cacheEnabled) return false;
     const headKey = getKey('HEAD-', reqObj, lang)
     const pageKey = getKey('PAGE-', reqObj, lang)
@@ -223,6 +242,18 @@ const createResponseCache = (conf) => {
     Logger.debug(reqObj.id + ' CACHE DEL: ' + pageKey);
     cache.delAsync(getKey('HEAD-', reqObj, lang));
     cache.delAsync(getKey('PAGE-', reqObj, lang));
+    return true;
+  };
+
+  const delSync = async (reqObj, lang) => {
+    if (!conf.cacheEnabled) return false;
+    const headKey = getKey('HEAD-', reqObj, lang)
+    const pageKey = getKey('PAGE-', reqObj, lang)
+    Logger.debug(reqObj.id + ' CACHE DEL: ' + getFullUrl(reqObj, lang));
+    Logger.debug(reqObj.id + ' CACHE DEL: ' + headKey);
+    Logger.debug(reqObj.id + ' CACHE DEL: ' + pageKey);
+    await cache.delAsync(getKey('HEAD-', reqObj, lang));
+    await cache.delAsync(getKey('PAGE-', reqObj, lang));
     return true;
   };
 
@@ -255,7 +286,9 @@ const createResponseCache = (conf) => {
     validate: validate,
     get: get,
     save: save,
+    saveSync: saveSync,
     del: del,
+    delSync: delSync,
     purgeAll: purgeAll,
     purgeAllSync: purgeAllSync,
     purge: purge
