@@ -4,7 +4,7 @@
   "description": "The proxy server translates the contents from the origin by using Google Cloud Translation API",
   "main": "dist/server.js",
   "scripts": {
-    "exec": "babel-node src/index.js",
+    "exec": "babel-node src/server.js",
     "serv": "babel-node src/server.js",
     "build": "babel src --out-dir dist -s",
     "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/middle-firewall-test.js' --exit",
