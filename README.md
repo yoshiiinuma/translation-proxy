@@ -1,11 +1,9 @@
 # translation-proxy
----
 
 Translation-Proxy translates the contents from the origin by using Google Cloud Translation API when requested.
 
      
 ## Requirements
----
 
 - redis
 - Node.js
@@ -15,7 +13,6 @@ Translation-Proxy translates the contents from the origin by using Google Cloud 
 
      
 ## Installation
----
 
 ```sh
 $ npm install translation-proxy
@@ -26,7 +23,6 @@ $ npm run build
 
      
 ## Google Service Account and API Key Setup
----
 
 1. Log in to [Google Cloud Platform Console](https://console.cloud.google.com).
 
@@ -42,12 +38,12 @@ $ npm run build
 
 4. Activate service account with SDK.
 
-  $ gcloud auth activate-service-account --key-file <your-key>.json
+  $ gcloud auth activate-service-account --key-file your-key.json
 
 5. Set the API KEY path to Environmental Variable: GOOGLE_APPLICATION_CREDENTIALS
 
   ```sh
-  $ export GOOGLE_APPLICATION_CREDENTIALS="path/to/<your-key>.json"
+  $ export GOOGLE_APPLICATION_CREDENTIALS="path/to/your-key.json"
   ```
 
 6. Test your Service Account API Key
@@ -58,7 +54,6 @@ $ npm run build
 
      
 ## Test
----
 
 ```sh
 $ npm run test
@@ -66,7 +61,6 @@ $ npm run test
 
      
 ## Usage
----
 
 ```sh
 $ sudo node dist/server.js
@@ -74,7 +68,6 @@ $ sudo node dist/server.js
 
      
 ## Configuration
----
 
 copy config/sample.json and create config/config.json and modify it.
 
@@ -121,7 +114,7 @@ copy config/sample.json and create config/config.json and modify it.
      
 ### Sample For Wordpress Origin
 
-```json
+```
 {
   ...
   "cacheSkipUrls": ["wp-admin", "wp-login", "wp-cron.php"],
@@ -154,8 +147,8 @@ copy config/sample.json and create config/config.json and modify it.
 | Option | Description |
 | ------ | ----------- | 
 | translationSelectors | DOM selectors which specify where to be translated; eg. 'body', 'div#main' |
-| maxPageSize | Not allow the page to be translated if the total text size exceeds this limit (in Byte); default 50,000 bytes. |
-| maxTextPerRequest |  Max text size (in Byte) per API request. |
+| maxPageSize | Not allow the page to be translated if the total text size exceeds this limit (in character); default 50,000 characters. |
+| maxTextPerRequest |  Max text size (in character) per API request. |
 | domBreakdownThreshold | If the size of a DOM component is larger than this threshold, the parser goes down into its children to break down the text when it creates API requests. |
 | gcloudPath | The Google Cloud SDK installation path. |
 | keyPath | The path to API Key. |
@@ -186,7 +179,6 @@ copy config/sample.json and create config/config.json and modify it.
 
      
 ## Caching
----
 
 The proxy caches every response from the origin server when caching is enabled and the following conditions are satisfied:
 
@@ -222,7 +214,6 @@ The proxy caches every response from the origin server when caching is enabled a
 
      
 ## Purge Cache
----
 
 There are two ways to purge cache:
 
@@ -237,13 +228,11 @@ For purging all the cache, send a HTTP PURGE request to /purge-proxy-cache?page=
 
      
 ## Wordpress Plugin
----
 
 - There is a wordpress plugin called [wp-translation-proxy-plugin](https://github.com/yoshiiinuma/wp-translation-proxy-plugin).
   It automatically sends a cache purge request to the proxy when page/post/attachment/theme is updated. However, its some features work only for a specific Wordpress theme for now.
      
 ## Proxy Server Management with PM2
----
 
 I would recommend pm2.
 
