@@ -572,10 +572,10 @@ describe('ResponseCache#getTtl', () => {
     context('when a spcific response code gets returned', () => {
       it('returns default ttl', () => {
         expect(ResponseCache.getTtl({ statusCode: 200, headers: {'content-type': 'image/jpeg'}})).to.be.equal(300);
-        expect(ResponseCache.getTtl({ statusCode: 302, headers: {'content-type': 'image/jpeg'}})).to.be.equal(300);
-        expect(ResponseCache.getTtl({ statusCode: 307, headers: {'content-type': 'image/jpeg'}})).to.be.equal(300);
-        expect(ResponseCache.getTtl({ statusCode: 500, headers: {'content-type': 'image/jpeg'}})).to.be.equal(300);
-        expect(ResponseCache.getTtl({ statusCode: 503, headers: {'content-type': 'image/jpeg'}})).to.be.equal(300);
+        expect(ResponseCache.getTtl({ statusCode: 302, headers: {'content-type': 'image/jpeg'}})).to.be.equal(60);
+        expect(ResponseCache.getTtl({ statusCode: 307, headers: {'content-type': 'image/jpeg'}})).to.be.equal(60);
+        expect(ResponseCache.getTtl({ statusCode: 500, headers: {'content-type': 'image/jpeg'}})).to.be.equal(60);
+        expect(ResponseCache.getTtl({ statusCode: 503, headers: {'content-type': 'image/jpeg'}})).to.be.equal(60);
       });
     });
   });

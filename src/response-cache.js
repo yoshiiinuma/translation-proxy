@@ -41,6 +41,7 @@ const setCache = async (reqObj, lang, val) => {
 }
 
 const DEFAULT_EXPIRE_IN_SECS = 300;
+const DEFAULT_SHORT_EXPIRE_IN_SECS = 60;
 
 const createTtlRules = (conf) => {
   let r = { rules: [], defaultTtl: DEFAULT_EXPIRE_IN_SECS };
@@ -90,7 +91,7 @@ const SHORTTERM_CACHE = {
 const createResponseCache = (conf) => {
   const cache = createCache(conf);
   const ttlRules = createTtlRules(conf);
-  const shortTtl = conf.cacheShortTTL || DEFAULT_EXPIRE_IN_SECS;
+  const shortTtl = conf.cacheShortTTL || DEFAULT_SHORT_EXPIRE_IN_SECS;
 
   const getTtl = (resObj) => {
     const type = resObj.headers['content-type'];
