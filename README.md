@@ -178,6 +178,18 @@ copy config/sample.json and create config/config.json and modify it.
 | accessLogFile | Access log file name; default access.log |
 
      
+## Translation
+
+The requestd page will be translated if its URL has the ***lang*** parameter.
+The parameter value must conform to codes defined by the Google Cloud Translation API.
+[Google Cloud Translation API Supported Langauges and Codes](https://cloud.google.com/translate/docs/languages) are here.
+
+### Example
+```
+http://example.com/path/to/page?lang=ja
+```
+
+     
 ## Caching
 
 The proxy caches every response from the origin server when caching is enabled and the following conditions are satisfied:
