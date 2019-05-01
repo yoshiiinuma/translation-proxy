@@ -1,75 +1,41 @@
 
 import fs from 'fs';
-import http from 'http';
-import https from 'https';
 
-import Logger from './logger.js';
 import { loadConfig } from './conf.js';
-import { clientError } from './error-handler.js';
-import AgentSelector from './agent-selector.js';
-import createResponseCache from './response-cache.js';
-import { createHtmlPageTranslator } from './page-translator.js';
-import { setUpRequestHandler } from './request-handler.js';
-import { setUpResponseHandler } from './response-handler.js';
-import { setUpPreprocessor } from './middle-preprocess.js';
-import { setUpMiddleFirewall } from './middle-firewall.js';
-import { setUpMiddleCachePurger } from './middle-cache-purger.js';
-import { setUpMiddleCache } from './middle-cache.js';
-import { setUpMiddleProxy } from './middle-proxy.js';
+import Logger from './logger.js';
+import { createProxyServer } from './proxy.js';
 
-const setUncaughtExceptionHandler = () => {
-  process.on('uncaughtException', (err) => {
-    Logger.fatal('########################################################################');
-    Logger.fatal('Uncaught Exception');
-    Logger.fatal(err);
-    Logger.fatal('########################################################################');
-  });
-  process.on('unhandledRejection', (reason, p) => {
-    Logger.fatal('########################################################################');
-    Logger.fatal('Unhandled Rejection');
-    Logger.fatal(reason);
-    Logger.fatal(p);
-    Logger.fatal('########################################################################');
-  });
+const usage = () => {
+  console.log('');
+  console.log('USAGE: npm run exec -- [CONFIGFILE]');
+  console.log('USAGE: node dist/server.js [CONFIGFILE]');
+  console.log('');
+  console.log('CONFIGFILE:     default ./config/config.json');
+  console.log('');
 };
 
-setUncaughtExceptionHandler();
+const DEFAULT_CONF = './config/config.json';
+let filename = DEFAULT_CONF;
 
-const conf = loadConfig('./config/config.json');
+if (process.argv.length > 3) {
+  usage();
+  process.exit();
+}
+
+if (process.argv.length == 3) {
+  filename = process.argv[2];
+}
+if (!fs.existsSync(filename)) {
+  console.log('Config File Not Found: ' + filename + "\n");
+  usage();
+  process.exit();
+}
+
+
+const conf = loadConfig(filename);
 
 Logger.initialize(conf);
 
-const certs = {
-  key: fs.readFileSync(conf.sslKey),
-  cert: fs.readFileSync(conf.sslCert),
-};
-
-const Translator = createHtmlPageTranslator(conf);
-const ResponseCache = createResponseCache(conf);
-
-const RequestHandler = setUpRequestHandler();
-const ResponseHandler = setUpResponseHandler(Translator, ResponseCache);
-
-const MiddlePreprocessor = setUpPreprocessor(conf);
-const MiddleFirewall = setUpMiddleFirewall(conf);
-const MiddleCachePurger = setUpMiddleCachePurger(ResponseCache);
-const MiddleCache = setUpMiddleCache(ResponseHandler, ResponseCache);
-const MiddleProxy = setUpMiddleProxy(ResponseHandler, AgentSelector, ResponseCache);
-
-RequestHandler.use(MiddlePreprocessor);
-RequestHandler.use(MiddleFirewall);
-RequestHandler.use(MiddleCachePurger);
-RequestHandler.use(MiddleCache);
-RequestHandler.use(MiddleProxy);
-
-const httpServer = http.createServer(RequestHandler.serve);
-const httpsServer = https.createServer(certs, RequestHandler.serve);
-const serverHttpPort = conf.serverHttpPort || 80;
-const serverHttpsPort = conf.serverHttpsPort || 443;
-
-httpServer.on('clientError', clientError);
-httpsServer.on('clientError', clientError);
-
-httpServer.listen(serverHttpPort, '0.0.0.0');
-httpsServer.listen(serverHttpsPort, '0.0.0.0');
+const server = createProxyServer(conf);
+server.start();
 
