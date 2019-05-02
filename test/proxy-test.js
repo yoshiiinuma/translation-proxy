@@ -31,6 +31,7 @@ const conf = {
  *
  * This is the expected behavior.
  *
+ ********************************************************/
 describe('proxy', () => {
   context('when receiving SIGINT', () => {
     let server;
@@ -51,4 +52,3 @@ describe('proxy', () => {
     });
   });
 });
-/********************************************************/
