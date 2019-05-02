@@ -7,7 +7,8 @@
     "exec": "babel-node src/server.js",
     "serv": "babel-node src/server.js",
     "build": "babel src --out-dir dist -s",
-    "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/middle-firewall-test.js' --exit",
+    "unit": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/proxy-test.js' --exit",
+    "unit5": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/middle-firewall-test.js' --exit",
     "unit2": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/middle-cache-purger-test.js' --exit",
     "unit3": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/response-cache-test.js' --exit",
     "unit4": "NODE_ENV=test mocha --require @babel/register --require @babel/polyfill './test/cache-test.js' --exit",
@@ -55,6 +56,7 @@
     "http-proxy": "^1.17.0",
     "redis": "^2.8.0",
     "request-ip": "^2.1.3",
+    "stoppable": "^1.1.0",
     "zlib": "^1.0.5"
   }
 }

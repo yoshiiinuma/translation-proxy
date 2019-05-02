@@ -279,6 +279,12 @@ const createResponseCache = (conf) => {
       return true;
   };
 
+  const close = async () => {
+    Logger.info('CACHE CLOSE');
+    await cache.quitAsync();
+    return true
+  };
+
   const ResponseCache = {
     ttlRules: ttlRules,
     getTtl: getTtl,
@@ -292,7 +298,8 @@ const createResponseCache = (conf) => {
     delSync: delSync,
     purgeAll: purgeAll,
     purgeAllSync: purgeAllSync,
-    purge: purge
+    purge: purge,
+    close: close,
   };
 
   return ResponseCache;

@@ -31,7 +31,6 @@ if (!fs.existsSync(filename)) {
   process.exit();
 }
 
-
 const conf = loadConfig(filename);
 
 Logger.initialize(conf);

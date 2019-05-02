@@ -68,6 +68,19 @@ export default (opt) => {
     });
   };
 
+  const quitAsync = () => {
+    return new Promise((resolve, reject) => {
+      client.quit((err) => {
+        if (err) {
+          Logger.debug('CACHE QUIT ASYNC ERROR');
+          Logger.debug(err);
+          return resolve(err);
+        }
+        resolve();
+      });
+    });
+  };
+
   const get = (key, callback) => {
     client.get(key, (err, val) => {
       if (err) {
@@ -113,14 +126,27 @@ export default (opt) => {
     });
   };
 
+  const quit = (callback) => {
+    client.quit((err) => {
+      if (err) {
+        Logger.debug('CACHE QUIT ERROR');
+        Logger.debug(err);
+        return callback(err);
+      }
+      callback(null);
+    });
+  };
+
   return {
     getAsync,
     setAsync,
     delAsync,
     flushallAsync,
+    quitAsync,
     get,
     set,
     del,
     flushall,
+    quit,
   };
 };

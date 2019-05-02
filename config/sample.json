@@ -24,6 +24,7 @@
   "serverHttpsPort": 443,
   "targetHttpPort": 80,
   "targetHttpsPort": 443,
+  "shutdownGrace": 3000,
   "sslCert": "./certs/test.pem",
   "sslKey": "./certs/test.key",
   "redisHost": "127.0.0.1",

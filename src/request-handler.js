@@ -47,5 +47,13 @@ export const setUpRequestHandler = () => {
     middleware.push(func);
   }
 
+  RequestHandler.close = () => {
+    for (let middle of middleware) {
+      if (middle.hasObnwProperty('close')) {
+        middle.close();
+      }
+    }
+  }
+
   return RequestHandler;
 };
